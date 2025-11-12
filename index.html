@@ -1,11 +1,274 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>首页</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>iPhone风格滑块验证</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .slider-container {
+      width: 300px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 25px;
+      padding: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .slider-track {
+      width: 100%;
+      height: 50px;
+      background: #f2f2f7;
+      border-radius: 25px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .slider-thumb {
+      width: 46px;
+      height: 46px;
+      background: #ffffff;
+      border-radius: 50%;
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      cursor: grab;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 3;
+      transition: transform 0.1s ease;
+      user-select: none;
+    }
+
+    .slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.05);
+    }
+
+    .slider-thumb.success {
+      background: #34c759;
+    }
+
+    .slider-thumb::after {
+      content: "→";
+      font-size: 18px;
+      color: #007aff;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .slider-thumb.success::after {
+      content: "✓";
+      color: white;
+      font-size: 20px;
+    }
+
+    .slider-text {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      line-height: 50px;
+      color: #8e8e93;
+      font-size: 14px;
+      font-weight: 500;
+      user-select: none;
+      z-index: 1;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .slider-text.hide {
+      opacity: 0;
+    }
+
+    .slider-progress {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #007aff, #5856d6);
+      border-radius: 25px;
+      transition: background-color 0.3s ease;
+      z-index: 2;
+    }
+
+    .slider-track.success .slider-progress {
+      background: #34c759;
+    }
+
+    .slider-track.success .slider-text {
+      color: #34c759;
+    }
+  </style>
 </head>
 <body>
-  <h1>你好</h1>
+  <div class="slider-container">
+    <div class="slider-track" id="sliderTrack">
+      <div class="slider-thumb" id="sliderThumb"></div>
+      <div class="slider-text" id="sliderText">滑动来解锁</div>
+      <div class="slider-progress" id="sliderProgress"></div>
+    </div>
+  </div>
+
+  <script>
+    class SliderVerification {
+      constructor() {
+        // DOM 元素
+        this.thumb = document.getElementById('sliderThumb');
+        this.track = document.getElementById('sliderTrack');
+        this.progress = document.getElementById('sliderProgress');
+        this.text = document.getElementById('sliderText');
+
+        // 状态变量
+        this.isDragging = false;
+        this.startX = 0;
+        this.currentX = 0;
+        this.maxX = 0;
+        this.isSuccess = false;
+
+        this.init();
+      }
+
+      init() {
+        // 动态计算最大可滑动距离（减去滑块自身宽度和内边距）
+        this.maxX = this.track.offsetWidth - this.thumb.offsetWidth - 4;
+        this.bindEvents();
+      }
+
+      bindEvents() {
+        // 鼠标事件
+        this.thumb.addEventListener('mousedown', this.handleStart.bind(this));
+        document.addEventListener('mousemove', this.handleMove.bind(this));
+        document.addEventListener('mouseup', this.handleEnd.bind(this));
+
+        // 触摸事件
+        this.thumb.addEventListener('touchstart', this.handleStart.bind(this), { passive: false });
+        document.addEventListener('touchmove', this.handleMove.bind(this), { passive: false });
+        document.addEventListener('touchend', this.handleEnd.bind(this));
+
+        // 点击轨道（可选，快速定位）
+        this.track.addEventListener('click', this.handleTrackClick.bind(this));
+
+        // 窗口大小变化时重新计算
+        window.addEventListener('resize', () => {
+          this.maxX = this.track.offsetWidth - this.thumb.offsetWidth - 4;
+        });
+      }
+
+      getClientX(e) {
+        return e.type.includes('touch') ? (e.touches[0]?.clientX || e.changedTouches[0]?.clientX) : e.clientX;
+      }
+
+      handleStart(e) {
+        if (this.isSuccess) return;
+        this.isDragging = true;
+        this.startX = this.getClientX(e) - this.currentX;
+        this.thumb.style.transition = 'none';
+        this.progress.style.transition = 'none';
+        this.text.classList.add('hide');
+        e.preventDefault();
+      }
+
+      handleMove(e) {
+        if (!this.isDragging || this.isSuccess) return;
+        const clientX = this.getClientX(e);
+        this.currentX = clientX - this.startX;
+        this.currentX = Math.max(0, Math.min(this.currentX, this.maxX));
+        this.updatePosition();
+        e.preventDefault();
+      }
+
+      handleEnd() {
+        if (!this.isDragging || this.isSuccess) return;
+        this.isDragging = false;
+        this.thumb.style.transition = '';
+        this.progress.style.transition = '';
+
+        // 必须滑到最右侧（100%）才算成功
+        if (this.currentX >= this.maxX) {
+          this.handleSuccess();
+        } else {
+          this.handleFail();
+        }
+      }
+
+      handleTrackClick(e) {
+        if (this.isDragging || this.isSuccess) return;
+        const rect = this.track.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const targetX = clickX - this.thumb.offsetWidth / 2;
+        if (targetX >= 0 && targetX <= this.maxX) {
+          this.currentX = Math.max(0, Math.min(targetX, this.maxX));
+          this.updatePosition();
+          setTimeout(() => {
+            if (this.currentX >= this.maxX && !this.isSuccess) {
+              this.handleSuccess();
+            } else if (!this.isSuccess) {
+              this.handleFail();
+            }
+          }, 100);
+        }
+      }
+
+      handleSuccess() {
+        this.isSuccess = true;
+        this.currentX = this.maxX;
+
+        this.track.classList.add('success');
+        this.thumb.classList.add('success');
+        this.text.textContent = '验证成功';
+        this.text.style.color = '#34c759';
+        this.text.classList.remove('hide');
+
+        this.updatePosition();
+
+        // ✅ 直接提示验证成功（无延迟，无报错）
+        alert('验证成功！');
+      }
+
+      handleFail() {
+        this.currentX = 0;
+        this.text.textContent = '滑动来解锁';
+        this.text.style.color = '#8e8e93';
+        this.text.classList.remove('hide');
+        this.updatePosition();
+      }
+
+      updatePosition() {
+        this.thumb.style.left = `${this.currentX}px`;
+        this.progress.style.width = `${this.currentX}px`;
+      }
+
+      reset() {
+        this.isSuccess = false;
+        this.currentX = 0;
+        this.isDragging = false;
+        this.track.classList.remove('success');
+        this.thumb.classList.remove('success');
+        this.text.textContent = '滑动来解锁';
+        this.text.style.color = '#8e8e93';
+        this.text.classList.remove('hide');
+        this.thumb.style.transition = '';
+        this.progress.style.transition = '';
+        this.updatePosition();
+      }
+    }
+
+    // 页面加载完成后初始化组件
+    document.addEventListener('DOMContentLoaded', () => {
+      new SliderVerification();
+    });
+  </script>
 </body>
 </html>
