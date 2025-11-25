@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>博客</title>
+  <title>技术博客系统</title>
   <style>
-    /* 全局样式 */
     :root {
       --primary-color: #4361ee;
       --secondary-color: #3f37c9;
@@ -222,6 +221,85 @@
       padding: 0 2rem;
     }
 
+    /* 下班倒计时样式 */
+    .countdown-container {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 30px auto;
+      max-width: 600px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .countdown-title {
+      font-size: 1.5rem;
+      color: var(--primary-color);
+      margin-bottom: 15px;
+    }
+
+    .countdown-display {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .countdown-unit {
+      background: var(--light-gray);
+      padding: 10px 15px;
+      border-radius: 8px;
+      min-width: 70px;
+    }
+
+    .countdown-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    .countdown-label {
+      font-size: 0.9rem;
+      color: var(--dark-gray);
+    }
+
+    .motivation-text {
+      font-style: italic;
+      color: var(--dark-gray);
+      margin-top: 10px;
+    }
+
+    /* 下班状态样式 */
+    .off-work {
+      background: linear-gradient(135deg, #4caf50, #2e7d32);
+      color: white;
+    }
+
+    .off-work .countdown-number {
+      color: white;
+    }
+
+    /* 临近下班样式 */
+    .warning {
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: white;
+    }
+
+    .warning .countdown-number {
+      color: white;
+    }
+
+    .danger {
+      background: linear-gradient(135deg, #e53935, #b71c1c);
+      color: white;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.9; }
+    }
+
     /* 响应式设计 */
     @media (max-width: 768px) {
       .container {
@@ -337,11 +415,101 @@
     </aside>
   </div>
 
+  <!-- 下班倒计时组件 -->
+  <div class="countdown-container" id="countdown-container">
+    <h2 class="countdown-title">下班倒计时</h2>
+    <div class="countdown-display">
+      <div class="countdown-unit">
+        <div class="countdown-number" id="hours">00</div>
+        <div class="countdown-label">小时</div>
+      </div>
+      <div class="countdown-unit">
+        <div class="countdown-number" id="minutes">00</div>
+        <div class="countdown-label">分钟</div>
+      </div>
+      <div class="countdown-unit">
+        <div class="countdown-number" id="seconds">00</div>
+        <div class="countdown-label">秒</div>
+      </div>
+    </div>
+    <p class="motivation-text" id="motivation">加油！今天也要高效工作哦~</p>
+  </div>
+
   <!-- 页脚 -->
   <footer class="footer">
     <div class="footer-content">
       <p>© 2023 技术博客系统 | 由HTML和CSS构建</p>
     </div>
   </footer>
+
+  <script>
+    // 下班倒计时功能
+    function updateCountdown() {
+      const now = new Date();
+      const offHour = 18; // 18点
+      const offMinute = 30; // 30分
+      
+      // 设置今天下班时间
+      let offTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        offHour,
+        offMinute,
+        0
+      );
+      
+      // 如果已经过了下班时间，设置为明天
+      if (now > offTime) {
+        offTime.setDate(offTime.getDate() + 1);
+      }
+      
+      // 计算时间差（毫秒）
+      const diff = offTime - now;
+      
+      // 如果已经下班
+      if (diff <= 0) {
+        document.getElementById('hours').textContent = '00';
+        document.getElementById('minutes').textContent = '00';
+        document.getElementById('seconds').textContent = '00';
+        document.getElementById('motivation').textContent = '🎉 下班啦！好好休息 🎉';
+        document.getElementById('countdown-container').className = 'countdown-container off-work';
+        return;
+      }
+      
+      // 计算剩余时间
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      // 更新显示
+      document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+      document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+      document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+      
+      // 更新激励语和样式
+      const container = document.getElementById('countdown-container');
+      const motivation = document.getElementById('motivation');
+      
+      // 清除所有状态类
+      container.className = 'countdown-container';
+      
+      if (hours === 0 && minutes < 10) {
+        // 最后10分钟
+        container.classList.add('danger');
+        motivation.textContent = '💪 再坚持一下，马上就要下班了！';
+      } else if (hours === 0 && minutes < 60) {
+        // 最后1小时
+        container.classList.add('warning');
+        motivation.textContent = '✨ 胜利在望，保持专注！';
+      } else if (hours < 3) {
+        motivation.textContent = '🚀 高效工作，时间过得飞快~';
+      }
+    }
+    
+    // 初始化并每秒更新
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+  </script>
 </body>
 </html>
