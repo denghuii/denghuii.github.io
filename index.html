@@ -3,272 +3,188 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>iPhone风格滑块验证</title>
+  <title>下班倒计时</title>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+    /* 基础重置 */
+    * {
       margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    .slider-container {
-      width: 300px;
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 25px;
-      padding: 8px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .slider-track {
-      width: 100%;
-      height: 50px;
-      background: #f2f2f7;
-      border-radius: 25px;
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-    }
-
-    .slider-thumb {
-      width: 46px;
-      height: 46px;
-      background: #ffffff;
-      border-radius: 50%;
-      position: absolute;
-      left: 2px;
-      top: 2px;
-      cursor: grab;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    body {
+      font-family: "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      z-index: 3;
-      transition: transform 0.1s ease;
-      user-select: none;
-    }
-
-    .slider-thumb:active {
-      cursor: grabbing;
-      transform: scale(1.05);
-    }
-
-    .slider-thumb.success {
-      background: #34c759;
-    }
-
-    .slider-thumb::after {
-      content: "→";
-      font-size: 18px;
-      color: #007aff;
-      font-weight: bold;
-      transition: all 0.3s ease;
-    }
-
-    .slider-thumb.success::after {
-      content: "✓";
-      color: white;
-      font-size: 20px;
-    }
-
-    .slider-text {
-      position: absolute;
-      width: 100%;
+      justify-content: center;
+      min-height: 100vh;
       text-align: center;
-      line-height: 50px;
-      color: #8e8e93;
-      font-size: 14px;
-      font-weight: 500;
-      user-select: none;
-      z-index: 1;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
+      padding: 20px;
+      transition: background 0.5s ease;
     }
 
-    .slider-text.hide {
-      opacity: 0;
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
     }
 
-    .slider-progress {
-      height: 100%;
-      width: 0;
-      background: linear-gradient(90deg, #007aff, #5856d6);
-      border-radius: 25px;
-      transition: background-color 0.3s ease;
-      z-index: 2;
+    .info {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+      opacity: 0.9;
     }
 
-    .slider-track.success .slider-progress {
-      background: #34c759;
+    .countdown {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
-    .slider-track.success .slider-text {
-      color: #34c759;
+    .time-box {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 20px 25px;
+      border-radius: 12px;
+      min-width: 100px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease;
+    }
+
+    .time-box:hover {
+      transform: translateY(-5px);
+    }
+
+    .number {
+      font-size: 3rem;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    .label {
+      font-size: 1rem;
+      margin-top: 8px;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .celebrate {
+      font-size: 2rem;
+      color: #ffeb3b;
+      text-shadow: 0 0 10px #ff9800, 0 0 20px #ff5722;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    /* 下班前1小时橙色警示 */
+    .warning {
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+    }
+
+    /* 下班前10分钟红色闪烁 */
+    .danger {
+      background: linear-gradient(135deg, #e53935, #b71c1c);
+      animation: blink 1s infinite alternate;
+    }
+
+    @keyframes blink {
+      from { opacity: 1; }
+      to { opacity: 0.7; }
+    }
+
+    /* 响应式 */
+    @media (max-width: 600px) {
+      h1 { font-size: 2rem; }
+      .number { font-size: 2.2rem; }
+      .time-box { padding: 15px 20px; min-width: 80px; }
     }
   </style>
 </head>
 <body>
-  <div class="slider-container">
-    <div class="slider-track" id="sliderTrack">
-      <div class="slider-thumb" id="sliderThumb"></div>
-      <div class="slider-text" id="sliderText">滑动来解锁</div>
-      <div class="slider-progress" id="sliderProgress"></div>
-    </div>
+  <h1>下班倒计时</h1>
+  <p class="info">当前时间：<span id="current-time"></span> | 下班时间：18:30</p>
+  <div class="countdown" id="countdown">
+    <!-- JS 动态生成 -->
   </div>
 
   <script>
-    class SliderVerification {
-      constructor() {
-        // DOM 元素
-        this.thumb = document.getElementById('sliderThumb');
-        this.track = document.getElementById('sliderTrack');
-        this.progress = document.getElementById('sliderProgress');
-        this.text = document.getElementById('sliderText');
+    // 下班时间固定为今天 18:30
+    const OFF_HOUR = 18;
+    const OFF_MINUTE = 30;
 
-        // 状态变量
-        this.isDragging = false;
-        this.startX = 0;
-        this.currentX = 0;
-        this.maxX = 0;
-        this.isSuccess = false;
+    const countdownEl = document.getElementById('countdown');
+    const currentTimeEl = document.getElementById('current-time');
 
-        this.init();
+    function updateClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      currentTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
+
+      // 计算到下班时间的剩余毫秒数
+      let offToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), OFF_HOUR, OFF_MINUTE, 0, 0);
+      if (now > offToday) {
+        // 如果已过今天下班时间，则算到明天 18:30
+        offToday.setDate(offToday.getDate() + 1);
+      }
+      const diffMs = offToday - now;
+
+      if (diffMs <= 0) {
+        // 已下班
+        countdownEl.innerHTML = '<div class="celebrate">🎉 下班啦！好好休息 🎉</div>';
+        document.body.className = ''; // 清除警示样式
+        return;
       }
 
-      init() {
-        // 动态计算最大可滑动距离（减去滑块自身宽度和内边距）
-        this.maxX = this.track.offsetWidth - this.thumb.offsetWidth - 4;
-        this.bindEvents();
-      }
+      // 转换为天、时、分、秒
+      const diffSec = Math.floor(diffMs / 1000);
+      const days = Math.floor(diffSec / 86400);
+      const hoursLeft = Math.floor((diffSec % 86400) / 3600);
+      const minutesLeft = Math.floor((diffSec % 3600) / 60);
+      const secondsLeft = diffSec % 60;
 
-      bindEvents() {
-        // 鼠标事件
-        this.thumb.addEventListener('mousedown', this.handleStart.bind(this));
-        document.addEventListener('mousemove', this.handleMove.bind(this));
-        document.addEventListener('mouseup', this.handleEnd.bind(this));
+      countdownEl.innerHTML = `
+        <div class="time-box">
+          <div class="number">${days}</div>
+          <div class="label">天</div>
+        </div>
+        <div class="time-box">
+          <div class="number">${String(hoursLeft).padStart(2, '0')}</div>
+          <div class="label">时</div>
+        </div>
+        <div class="time-box">
+          <div class="number">${String(minutesLeft).padStart(2, '0')}</div>
+          <div class="label">分</div>
+        </div>
+        <div class="time-box">
+          <div class="number">${String(secondsLeft).padStart(2, '0')}</div>
+          <div class="label">秒</div>
+        </div>
+      `;
 
-        // 触摸事件
-        this.thumb.addEventListener('touchstart', this.handleStart.bind(this), { passive: false });
-        document.addEventListener('touchmove', this.handleMove.bind(this), { passive: false });
-        document.addEventListener('touchend', this.handleEnd.bind(this));
-
-        // 点击轨道（可选，快速定位）
-        this.track.addEventListener('click', this.handleTrackClick.bind(this));
-
-        // 窗口大小变化时重新计算
-        window.addEventListener('resize', () => {
-          this.maxX = this.track.offsetWidth - this.thumb.offsetWidth - 4;
-        });
-      }
-
-      getClientX(e) {
-        return e.type.includes('touch') ? (e.touches[0]?.clientX || e.changedTouches[0]?.clientX) : e.clientX;
-      }
-
-      handleStart(e) {
-        if (this.isSuccess) return;
-        this.isDragging = true;
-        this.startX = this.getClientX(e) - this.currentX;
-        this.thumb.style.transition = 'none';
-        this.progress.style.transition = 'none';
-        this.text.classList.add('hide');
-        e.preventDefault();
-      }
-
-      handleMove(e) {
-        if (!this.isDragging || this.isSuccess) return;
-        const clientX = this.getClientX(e);
-        this.currentX = clientX - this.startX;
-        this.currentX = Math.max(0, Math.min(this.currentX, this.maxX));
-        this.updatePosition();
-        e.preventDefault();
-      }
-
-      handleEnd() {
-        if (!this.isDragging || this.isSuccess) return;
-        this.isDragging = false;
-        this.thumb.style.transition = '';
-        this.progress.style.transition = '';
-
-        // 必须滑到最右侧（100%）才算成功
-        if (this.currentX >= this.maxX) {
-          this.handleSuccess();
-        } else {
-          this.handleFail();
-        }
-      }
-
-      handleTrackClick(e) {
-        if (this.isDragging || this.isSuccess) return;
-        const rect = this.track.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const targetX = clickX - this.thumb.offsetWidth / 2;
-        if (targetX >= 0 && targetX <= this.maxX) {
-          this.currentX = Math.max(0, Math.min(targetX, this.maxX));
-          this.updatePosition();
-          setTimeout(() => {
-            if (this.currentX >= this.maxX && !this.isSuccess) {
-              this.handleSuccess();
-            } else if (!this.isSuccess) {
-              this.handleFail();
-            }
-          }, 100);
-        }
-      }
-
-      handleSuccess() {
-        this.isSuccess = true;
-        this.currentX = this.maxX;
-
-        this.track.classList.add('success');
-        this.thumb.classList.add('success');
-        this.text.textContent = '验证成功';
-        this.text.style.color = '#34c759';
-        this.text.classList.remove('hide');
-
-        this.updatePosition();
-
-        // ✅ 直接提示验证成功（无延迟，无报错）
-        alert('验证成功！');
-      }
-
-      handleFail() {
-        this.currentX = 0;
-        this.text.textContent = '滑动来解锁';
-        this.text.style.color = '#8e8e93';
-        this.text.classList.remove('hide');
-        this.updatePosition();
-      }
-
-      updatePosition() {
-        this.thumb.style.left = `${this.currentX}px`;
-        this.progress.style.width = `${this.currentX}px`;
-      }
-
-      reset() {
-        this.isSuccess = false;
-        this.currentX = 0;
-        this.isDragging = false;
-        this.track.classList.remove('success');
-        this.thumb.classList.remove('success');
-        this.text.textContent = '滑动来解锁';
-        this.text.style.color = '#8e8e93';
-        this.text.classList.remove('hide');
-        this.thumb.style.transition = '';
-        this.progress.style.transition = '';
-        this.updatePosition();
+      // 动态改背景色警示
+      document.body.classList.remove('warning', 'danger');
+      if (diffMs <= 10 * 60 * 1000) { // 最后 10 分钟
+        document.body.classList.add('danger');
+      } else if (diffMs <= 60 * 60 * 1000) { // 最后 1 小时
+        document.body.classList.add('warning');
       }
     }
 
-    // 页面加载完成后初始化组件
-    document.addEventListener('DOMContentLoaded', () => {
-      new SliderVerification();
-    });
+    // 初始加载
+    updateClock();
+    // 每秒更新一次
+    setInterval(updateClock, 1000);
   </script>
 </body>
 </html>
