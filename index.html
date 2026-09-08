@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>每日日历 · PC 宽屏版</title>
+    <title>每日日期 · 极简版</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
@@ -54,7 +54,6 @@
         .bg-image.loaded {
             opacity: 1;
         }
-        /* 遮罩层 */
         .bg-overlay {
             position: fixed;
             top: 0;
@@ -70,12 +69,12 @@
             pointer-events: none;
         }
 
-        /* ===== 日历卡片 (PC 优化) ===== */
+        /* ===== 日历卡片 (精简版) ===== */
         .calendar-card {
             position: relative;
             z-index: 2;
             width: 100%;
-            max-width: 780px;
+            max-width: 580px;
             padding: 36px 40px 32px;
             border-radius: 48px;
             background: rgba(255, 255, 255, 0.06);
@@ -86,6 +85,7 @@
                 0 40px 100px rgba(0, 0, 0, 0.60),
                 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
             transition: transform 0.3s ease, box-shadow 0.4s ease;
+            text-align: center;
         }
         .calendar-card:hover {
             transform: translateY(-4px);
@@ -99,11 +99,11 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             padding: 0 4px;
         }
         .month-year {
-            font-size: 22px;  /* 调小月份标题 */
+            font-size: 24px;
             font-weight: 600;
             letter-spacing: 0.06em;
             color: rgba(255, 255, 255, 0.92);
@@ -142,139 +142,51 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 8px 0 12px;
-            margin-bottom: 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 12px 0 16px;
+            margin-bottom: 12px;
         }
         .day-number {
-            font-size: 100px;  /* 调小日期数字 */
+            font-size: 120px;
             font-weight: 800;
             line-height: 1;
             letter-spacing: -0.03em;
             color: #fff;
             text-shadow: 0 4px 40px rgba(0, 0, 0, 0.40);
-            transition: transform 0.3s ease;
         }
         .day-number.small {
-            font-size: 76px;
+            font-size: 92px;
         }
         .day-week {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 400;
             color: rgba(255, 255, 255, 0.80);
             letter-spacing: 0.08em;
-            margin-top: 4px;
+            margin-top: 6px;
             text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
         }
-        /* 新增：滚动时间 */
+        /* 滚动时间 */
         .live-time {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 300;
             letter-spacing: 0.12em;
             color: rgba(255, 255, 255, 0.70);
-            margin-top: 6px;
+            margin-top: 12px;
             font-variant-numeric: tabular-nums;
             text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
             background: rgba(0, 0, 0, 0.15);
-            padding: 4px 20px;
+            padding: 6px 28px;
             border-radius: 60px;
             backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.04);
-        }
-
-        /* ===== 日历网格 ===== */
-        .grid-wrap {
-            margin-top: 8px;
-        }
-        .weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            margin-bottom: 6px;
-            padding: 0 4px;
-        }
-        .weekdays span {
-            font-size: 14px;
-            font-weight: 600;
-            text-align: center;
-            color: rgba(255, 255, 255, 0.50);
-            letter-spacing: 0.06em;
-            padding: 6px 0;
-        }
-        .days-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-            padding: 0 4px;
-        }
-        .day-cell {
-            aspect-ratio: 1 / 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;  /* 调小日期格子数字 */
-            font-weight: 500;
-            border-radius: 16px;
-            color: rgba(255, 255, 255, 0.85);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background: rgba(255, 255, 255, 0.02);
-            position: relative;
-            box-shadow: 0 0 0 0 transparent;
-        }
-        .day-cell:hover {
-            background: rgba(255, 255, 255, 0.10);
-            transform: scale(1.06);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.20);
-        }
-        .day-cell:active {
-            transform: scale(0.92);
-        }
-        .day-cell.empty {
-            cursor: default;
-            background: transparent !important;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-        .day-cell.empty:hover {
-            transform: none !important;
-            background: transparent !important;
-            box-shadow: none !important;
-        }
-        /* 今天高亮 */
-        .day-cell.today {
-            background: rgba(255, 215, 0, 0.20);
-            color: #ffd866;
-            font-weight: 700;
-            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.30), 0 4px 24px rgba(255, 215, 0, 0.10);
-        }
-        .day-cell.today:hover {
-            background: rgba(255, 215, 0, 0.30);
-            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.45), 0 6px 32px rgba(255, 215, 0, 0.15);
-        }
-        /* 选中（非今天） */
-        .day-cell.selected {
-            background: rgba(255, 255, 255, 0.14);
-            font-weight: 700;
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
-        }
-        .day-cell.selected:hover {
-            background: rgba(255, 255, 255, 0.22);
-        }
-        /* 周末颜色微差 */
-        .day-cell.weekend {
-            color: rgba(255, 180, 180, 0.75);
-        }
-        .day-cell.today.weekend {
-            color: #ffd866;
+            display: inline-block;
         }
 
         /* ===== 底部 ===== */
         .card-footer {
             display: flex;
             justify-content: center;
-            margin-top: 20px;
-            padding-top: 16px;
+            margin-top: 24px;
+            padding-top: 18px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
         .today-btn {
@@ -301,7 +213,7 @@
             transform: scale(0.94);
         }
 
-        /* ===== 底部信息 ===== */
+        /* ===== 版权信息 ===== */
         .credit {
             position: fixed;
             bottom: 28px;
@@ -372,15 +284,15 @@
             }
         }
 
-        /* ===== PC 大屏专用优化 (≥1024px) ===== */
+        /* ===== 响应式 ===== */
         @media (min-width: 1024px) {
             .calendar-card {
-                max-width: 720px;  /* 稍微收窄一点，更精致 */
+                max-width: 620px;
                 padding: 40px 48px 36px;
                 border-radius: 56px;
             }
             .month-year {
-                font-size: 24px;
+                font-size: 26px;
             }
             .nav-btn {
                 width: 48px;
@@ -388,65 +300,45 @@
                 font-size: 26px;
             }
             .day-number {
+                font-size: 140px;
+            }
+            .day-number.small {
+                font-size: 108px;
+            }
+            .day-week {
+                font-size: 24px;
+            }
+            .live-time {
+                font-size: 36px;
+                padding: 8px 32px;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .calendar-card {
+                max-width: 540px;
+                padding: 32px 36px 28px;
+                border-radius: 44px;
+            }
+            .day-number {
                 font-size: 110px;
             }
             .day-number.small {
                 font-size: 84px;
             }
-            .day-week {
-                font-size: 21px;
-            }
             .live-time {
                 font-size: 30px;
-                padding: 6px 24px;
-            }
-            .day-cell {
-                font-size: 20px;
-                border-radius: 18px;
-            }
-            .weekdays span {
-                font-size: 15px;
-                padding: 8px 0;
-            }
-            .days-grid {
-                gap: 8px;
-            }
-            .today-btn {
-                font-size: 17px;
-                padding: 10px 40px;
             }
         }
 
-        /* ===== 中等屏幕 (768px ~ 1023px) ===== */
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .calendar-card {
-                max-width: 660px;
-                padding: 32px 36px 28px;
-                border-radius: 44px;
-            }
-            .day-number {
-                font-size: 96px;
-            }
-            .day-number.small {
-                font-size: 72px;
-            }
-            .day-cell {
-                font-size: 17px;
-            }
-            .live-time {
-                font-size: 26px;
-            }
-        }
-
-        /* ===== 小屏/移动端 (≤767px) ===== */
         @media (max-width: 767px) {
             .calendar-card {
-                padding: 24px 18px 20px;
+                padding: 24px 20px 20px;
                 border-radius: 32px;
-                max-width: 440px;
+                max-width: 400px;
             }
             .month-year {
-                font-size: 18px;
+                font-size: 20px;
             }
             .nav-btn {
                 width: 38px;
@@ -454,27 +346,17 @@
                 font-size: 20px;
             }
             .day-number {
-                font-size: 72px;
+                font-size: 84px;
             }
             .day-number.small {
-                font-size: 56px;
+                font-size: 64px;
             }
             .day-week {
-                font-size: 17px;
+                font-size: 18px;
             }
             .live-time {
-                font-size: 22px;
-                padding: 2px 16px;
-            }
-            .day-cell {
-                font-size: 15px;
-                border-radius: 10px;
-            }
-            .weekdays span {
-                font-size: 12px;
-            }
-            .days-grid {
-                gap: 3px;
+                font-size: 24px;
+                padding: 4px 20px;
             }
             .today-btn {
                 font-size: 14px;
@@ -488,28 +370,27 @@
 
         @media (max-width: 380px) {
             .calendar-card {
-                padding: 16px 12px 14px;
+                padding: 16px 14px 14px;
                 border-radius: 24px;
             }
             .day-number {
-                font-size: 56px;
+                font-size: 64px;
             }
             .day-number.small {
-                font-size: 44px;
+                font-size: 50px;
             }
-            .day-cell {
-                font-size: 13px;
-                border-radius: 8px;
-            }
-            .month-year {
+            .day-week {
                 font-size: 16px;
             }
             .live-time {
-                font-size: 18px;
+                font-size: 20px;
+                padding: 2px 14px;
+            }
+            .month-year {
+                font-size: 17px;
             }
         }
 
-        /* 暗色滚动条 */
         ::-webkit-scrollbar {
             width: 4px;
             height: 4px;
@@ -550,17 +431,7 @@
         <div class="date-main">
             <div class="day-number" id="dayNumber">8</div>
             <div class="day-week" id="dayWeek">星期二</div>
-            <!-- 新增滚动时间 -->
             <div class="live-time" id="liveTime">00:00:00</div>
-        </div>
-
-        <!-- 日历网格 -->
-        <div class="grid-wrap">
-            <div class="weekdays">
-                <span>日</span><span>一</span><span>二</span>
-                <span>三</span><span>四</span><span>五</span><span>六</span>
-            </div>
-            <div class="days-grid" id="daysGrid"></div>
         </div>
 
         <!-- 底部 -->
@@ -587,7 +458,6 @@
             const dayNumberEl = document.getElementById('dayNumber');
             const dayWeekEl = document.getElementById('dayWeek');
             const liveTimeEl = document.getElementById('liveTime');
-            const daysGrid = document.getElementById('daysGrid');
             const prevMonthBtn = document.getElementById('prevMonthBtn');
             const nextMonthBtn = document.getElementById('nextMonthBtn');
             const todayBtn = document.getElementById('todayBtn');
@@ -600,7 +470,6 @@
             let viewYear = today.getFullYear();
             let viewMonth = today.getMonth();
             let viewDay = today.getDate();
-            let isLoading = false;
 
             // ============================================================
             //  3. 工具函数
@@ -616,10 +485,6 @@
             function getWeekdayName(dayIndex) {
                 const names = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
                 return names[dayIndex];
-            }
-
-            function isWeekend(dayIndex) {
-                return dayIndex === 0 || dayIndex === 6;
             }
 
             // ============================================================
@@ -639,7 +504,6 @@
                     bgImage.classList.add('loaded');
                     bgImage.style.display = 'block';
                     loadingDots.classList.remove('active');
-                    isLoading = false;
                 };
 
                 img.onerror = function() {
@@ -649,11 +513,9 @@
                     wrapper.style.background =
                         `linear-gradient(145deg, hsl(${hue}, 50%, 18%), hsl(${(hue + 40) % 360}, 45%, 10%))`;
                     loadingDots.classList.remove('active');
-                    isLoading = false;
                     console.warn('背景图加载失败，使用纯色 fallback');
                 };
 
-                isLoading = true;
                 img.src = url;
 
                 if (img.complete) {
@@ -661,82 +523,29 @@
                     bgImage.classList.add('loaded');
                     bgImage.style.display = 'block';
                     loadingDots.classList.remove('active');
-                    isLoading = false;
                 }
             }
 
             // ============================================================
-            //  5. 更新日历 UI
+            //  5. 更新日期 UI（不再渲染网格）
             // ============================================================
-            function renderCalendar(year, month, selectedDay) {
+            function renderDate(year, month, day) {
                 const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
                 monthYearDisplay.textContent = `${year}年${monthNames[month]}`;
 
-                const dateObj = new Date(year, month, selectedDay);
+                const dateObj = new Date(year, month, day);
                 const dayOfWeek = dateObj.getDay();
-                dayNumberEl.textContent = selectedDay;
-                if (selectedDay >= 10) {
+                dayNumberEl.textContent = day;
+                if (day >= 10) {
                     dayNumberEl.classList.add('small');
                 } else {
                     dayNumberEl.classList.remove('small');
                 }
                 dayWeekEl.textContent = getWeekdayName(dayOfWeek);
-
-                const firstDayOfMonth = new Date(year, month, 1).getDay();
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-                daysGrid.innerHTML = '';
-
-                for (let i = 0; i < firstDayOfMonth; i++) {
-                    const empty = document.createElement('div');
-                    empty.className = 'day-cell empty';
-                    empty.textContent = '';
-                    daysGrid.appendChild(empty);
-                }
-
-                const todayDate = new Date();
-                const isTodayMonth = (year === todayDate.getFullYear() && month === todayDate.getMonth());
-                const todayDay = todayDate.getDate();
-
-                for (let d = 1; d <= daysInMonth; d++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'day-cell';
-                    cell.textContent = d;
-
-                    const dayIndex = new Date(year, month, d).getDay();
-                    if (isWeekend(dayIndex)) {
-                        cell.classList.add('weekend');
-                    }
-
-                    if (isTodayMonth && d === todayDay) {
-                        cell.classList.add('today');
-                    }
-
-                    if (d === selectedDay) {
-                        if (!(isTodayMonth && d === todayDay)) {
-                            cell.classList.add('selected');
-                        }
-                    }
-
-                    cell.addEventListener('click', function() {
-                        const day = parseInt(this.textContent, 10);
-                        viewDay = day;
-                        renderCalendar(viewYear, viewMonth, viewDay);
-                        updateBackground(viewYear, viewMonth, viewDay);
-                    });
-
-                    daysGrid.appendChild(cell);
-                }
-
-                if (selectedDay > daysInMonth) {
-                    viewDay = daysInMonth;
-                    renderCalendar(year, month, daysInMonth);
-                    updateBackground(year, month, daysInMonth);
-                }
             }
 
             // ============================================================
-            //  6. 实时时钟 (滚动时间)
+            //  6. 实时时钟
             // ============================================================
             function updateClock() {
                 const now = new Date();
@@ -745,10 +554,8 @@
                 const seconds = pad(now.getSeconds());
                 liveTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
             }
-
-            // 每秒更新一次
             setInterval(updateClock, 1000);
-            updateClock(); // 立即显示
+            updateClock();
 
             // ============================================================
             //  7. 切换月份 / 日期
@@ -760,9 +567,10 @@
                 } else {
                     viewMonth--;
                 }
+                // 确保日期不超出当月天数
                 const maxDay = new Date(viewYear, viewMonth + 1, 0).getDate();
                 if (viewDay > maxDay) viewDay = maxDay;
-                renderCalendar(viewYear, viewMonth, viewDay);
+                renderDate(viewYear, viewMonth, viewDay);
                 updateBackground(viewYear, viewMonth, viewDay);
             }
 
@@ -775,7 +583,7 @@
                 }
                 const maxDay = new Date(viewYear, viewMonth + 1, 0).getDate();
                 if (viewDay > maxDay) viewDay = maxDay;
-                renderCalendar(viewYear, viewMonth, viewDay);
+                renderDate(viewYear, viewMonth, viewDay);
                 updateBackground(viewYear, viewMonth, viewDay);
             }
 
@@ -784,7 +592,7 @@
                 viewYear = now.getFullYear();
                 viewMonth = now.getMonth();
                 viewDay = now.getDate();
-                renderCalendar(viewYear, viewMonth, viewDay);
+                renderDate(viewYear, viewMonth, viewDay);
                 updateBackground(viewYear, viewMonth, viewDay);
             }
 
@@ -797,7 +605,7 @@
                 viewMonth = now.getMonth();
                 viewDay = now.getDate();
 
-                renderCalendar(viewYear, viewMonth, viewDay);
+                renderDate(viewYear, viewMonth, viewDay);
                 updateBackground(viewYear, viewMonth, viewDay);
 
                 prevMonthBtn.addEventListener('click', goToPrevMonth);
@@ -827,7 +635,7 @@
                     }
                 });
 
-                console.log('📅 PC 宽屏日历已启动，每日更新图片，滚动时钟已开启');
+                console.log('📅 极简日期模式已启动，每日更新图片，滚动时钟运行中');
                 console.log(`📍 当前日期: ${viewYear}年${viewMonth+1}月${viewDay}日`);
             }
 
