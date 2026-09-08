@@ -3,10 +3,16 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>每日日期 · 透明极简</title>
+    <title>每日日期</title>
+    <link rel="dns-prefetch" href="https://api.dujin.org" />
+    <link rel="dns-prefetch" href="https://bing.img.run" />
+    <link rel="dns-prefetch" href="https://cn.bing.com" />
+    <link rel="preconnect" href="https://api.dujin.org" />
+    <link rel="preconnect" href="https://bing.img.run" />
+    <link rel="preconnect" href="https://cn.bing.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
     <style>
         /* ===== 全局重置 ===== */
         *,
@@ -48,12 +54,12 @@
             height: 100%;
             object-fit: cover;
             opacity: 0;
-            transition: opacity 1.2s ease;
+            transition: opacity 0.45s ease;
+            will-change: opacity;
         }
         .bg-image.loaded {
             opacity: 1;
         }
-        /* 遮罩层保留，让文字更清晰 */
         .bg-overlay {
             position: fixed;
             top: 0;
@@ -69,113 +75,100 @@
             pointer-events: none;
         }
 
-        /* ===== 日历卡片 - 完全透明 ===== */
+        /* ===== 卡片 - 右上角缩小 ===== */
         .calendar-card {
-            position: relative;
+            position: fixed;
+            top: 20px;
+            right: 24px;
             z-index: 2;
-            width: 100%;
-            max-width: 580px;
-            padding: 36px 40px 32px;
-            border-radius: 48px;
-            /* 完全透明 */
+            width: auto;
+            max-width: min(420px, calc(100vw - 32px));
+            padding: 10px 14px;
             background: transparent;
-            backdrop-filter: none;
-            -webkit-backdrop-filter: none;
             border: none;
             box-shadow: none;
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-        .calendar-card:hover {
-            transform: translateY(-3px);
+            text-align: right;
         }
 
-        /* ===== 头部：月份导航 ===== */
-        .card-header {
+        /* ===== 同一行：月日 + 时间 ===== */
+        .date-main {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding: 0 4px;
+            flex-direction: row;
+            align-items: baseline;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 0 10px;
         }
-        .month-year {
-            font-size: 24px;
-            font-weight: 600;
+
+        .date-label,
+        .weekday-label,
+        .live-time {
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 400;
             letter-spacing: 0.06em;
-            color: rgba(255, 255, 255, 0.95);
-            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.60), 0 0 40px rgba(0, 0, 0, 0.30);
+            line-height: 1.2;
+            text-shadow:
+                0 0 12px rgba(255, 255, 255, 0.70),
+                0 0 28px rgba(255, 255, 255, 0.35),
+                0 0 48px rgba(255, 255, 255, 0.15),
+                0 2px 12px rgba(0, 0, 0, 0.60);
         }
-        .nav-btn {
+
+        .live-time {
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ===== 右下角：更换背景 ===== */
+        .bg-refresh {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 4;
             width: 44px;
             height: 44px;
-            border: none;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, 0.18);
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.90);
-            font-size: 24px;
-            line-height: 1;
-            cursor: pointer;
-            transition: all 0.25s ease;
+            background: rgba(0, 0, 0, 0.28);
             backdrop-filter: blur(8px);
+            color: #ffffff;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.30);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease, opacity 0.25s ease;
+            box-shadow:
+                0 0 16px rgba(255, 255, 255, 0.12),
+                0 4px 20px rgba(0, 0, 0, 0.35);
         }
-        .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.16);
+        .bg-refresh:hover {
+            background: rgba(0, 0, 0, 0.42);
+            border-color: rgba(255, 255, 255, 0.35);
             transform: scale(1.06);
-            color: #fff;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.40);
         }
-        .nav-btn:active {
-            transform: scale(0.92);
-            background: rgba(255, 255, 255, 0.22);
+        .bg-refresh:active {
+            transform: scale(0.96);
         }
-
-        /* ===== 日期主显示 ===== */
-        .date-main {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 12px 0 16px;
-            margin-bottom: 4px;
+        .bg-refresh:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, 0.7);
+            outline-offset: 3px;
         }
-        .day-number {
-            font-size: 120px;
-            font-weight: 800;
-            line-height: 1;
-            letter-spacing: -0.03em;
-            color: #fff;
-            text-shadow: 0 4px 50px rgba(0, 0, 0, 0.70), 0 0 80px rgba(0, 0, 0, 0.30);
+        .bg-refresh svg {
+            width: 20px;
+            height: 20px;
+            display: block;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.35));
         }
-        .day-number.small {
-            font-size: 92px;
+        .bg-refresh.is-loading {
+            pointer-events: none;
+            opacity: 0.7;
         }
-        .day-week {
-            font-size: 22px;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.90);
-            letter-spacing: 0.08em;
-            margin-top: 6px;
-            text-shadow: 0 2px 24px rgba(0, 0, 0, 0.70), 0 0 40px rgba(0, 0, 0, 0.30);
+        .bg-refresh.is-loading svg {
+            animation: iconSpin 0.8s linear infinite;
         }
-        /* 滚动时间 */
-        .live-time {
-            font-size: 32px;
-            font-weight: 300;
-            letter-spacing: 0.12em;
-            color: rgba(255, 255, 255, 0.85);
-            margin-top: 14px;
-            font-variant-numeric: tabular-nums;
-            text-shadow: 0 2px 24px rgba(0, 0, 0, 0.70), 0 0 40px rgba(0, 0, 0, 0.25);
-            background: rgba(0, 0, 0, 0.15);
-            padding: 6px 28px;
-            border-radius: 60px;
-            backdrop-filter: blur(6px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            display: inline-block;
+        @keyframes iconSpin {
+            to { transform: rotate(360deg); }
         }
 
         /* ===== 版权信息 ===== */
@@ -250,105 +243,41 @@
         }
 
         /* ===== 响应式 ===== */
-        @media (min-width: 1024px) {
-            .calendar-card {
-                max-width: 620px;
-                padding: 40px 48px 36px;
-                border-radius: 56px;
-            }
-            .month-year {
-                font-size: 26px;
-            }
-            .nav-btn {
-                width: 48px;
-                height: 48px;
-                font-size: 26px;
-            }
-            .day-number {
-                font-size: 140px;
-            }
-            .day-number.small {
-                font-size: 108px;
-            }
-            .day-week {
-                font-size: 24px;
-            }
-            .live-time {
-                font-size: 36px;
-                padding: 8px 32px;
-            }
-        }
-
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .calendar-card {
-                max-width: 540px;
-                padding: 32px 36px 28px;
-                border-radius: 44px;
-            }
-            .day-number {
-                font-size: 110px;
-            }
-            .day-number.small {
-                font-size: 84px;
-            }
-            .live-time {
-                font-size: 30px;
-            }
-        }
-
         @media (max-width: 767px) {
             .calendar-card {
-                padding: 24px 20px 20px;
-                border-radius: 32px;
-                max-width: 400px;
+                top: 12px;
+                right: 12px;
+                padding: 8px 10px;
             }
-            .month-year {
-                font-size: 20px;
-            }
-            .nav-btn {
-                width: 38px;
-                height: 38px;
-                font-size: 20px;
-            }
-            .day-number {
-                font-size: 84px;
-            }
-            .day-number.small {
-                font-size: 64px;
-            }
-            .day-week {
-                font-size: 18px;
-            }
+            .date-label,
+            .weekday-label,
             .live-time {
-                font-size: 24px;
-                padding: 4px 20px;
+                font-size: 13px;
             }
             .credit {
                 font-size: 11px;
                 bottom: 16px;
             }
+            .bg-refresh {
+                right: 14px;
+                bottom: 14px;
+                width: 40px;
+                height: 40px;
+            }
+            .bg-refresh svg {
+                width: 18px;
+                height: 18px;
+            }
         }
 
         @media (max-width: 380px) {
-            .calendar-card {
-                padding: 16px 14px 14px;
-                border-radius: 24px;
-            }
-            .day-number {
-                font-size: 64px;
-            }
-            .day-number.small {
-                font-size: 50px;
-            }
-            .day-week {
-                font-size: 16px;
-            }
+            .date-label,
+            .weekday-label,
             .live-time {
-                font-size: 20px;
-                padding: 2px 14px;
+                font-size: 12px;
             }
-            .month-year {
-                font-size: 17px;
+            .date-main {
+                gap: 0 8px;
             }
         }
 
@@ -378,24 +307,13 @@
     </div>
     <div class="bg-overlay"></div>
 
-    <!-- ===== 日历卡片 ===== -->
+    <!-- ===== 卡片：月日 / 星期 / 时间 ===== -->
     <div class="calendar-card" id="calendarCard">
-
-        <!-- 头部 -->
-        <div class="card-header">
-            <button class="nav-btn" id="prevMonthBtn" aria-label="上个月">‹</button>
-            <span class="month-year" id="monthYearDisplay">2026年9月</span>
-            <button class="nav-btn" id="nextMonthBtn" aria-label="下个月">›</button>
-        </div>
-
-        <!-- 日期主显示 + 滚动时间 -->
         <div class="date-main">
-            <div class="day-number" id="dayNumber">8</div>
-            <div class="day-week" id="dayWeek">星期二</div>
-            <div class="live-time" id="liveTime">00:00:00</div>
+            <span class="date-label" id="dateLabel">2026年9月8日</span>
+            <span class="weekday-label" id="weekdayLabel">星期二</span>
+            <span class="live-time" id="liveTime">00:00:00</span>
         </div>
-
-        <!-- 底部已移除 "今天" 按钮 -->
     </div>
 
     <!-- ===== 版权信息 ===== -->
@@ -403,6 +321,16 @@
         图片来自 <a href="https://picsum.photos" target="_blank" rel="noopener">picsum.photos</a>
         &nbsp;·&nbsp; 每日更新
     </div>
+
+    <!-- ===== 更换背景 ===== -->
+    <button type="button" class="bg-refresh" id="bgRefresh" aria-label="更换背景图" title="更换背景图">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Z" stroke="currentColor" stroke-width="1.6"/>
+            <circle cx="9" cy="10" r="1.4" fill="currentColor"/>
+            <path d="m7.5 16.5 3.2-3.4a1.2 1.2 0 0 1 1.7 0L14 14.7l1.1-1.1a1.2 1.2 0 0 1 1.7 0l1.7 1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16.2 4.2 17.5 2.9m0 0L18.8 4.2M17.5 2.9V6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </button>
 
     <script>
         (function() {
@@ -412,31 +340,24 @@
             //  1. DOM 引用
             // ============================================================
             const bgImage = document.getElementById('bgImage');
-            const monthYearDisplay = document.getElementById('monthYearDisplay');
-            const dayNumberEl = document.getElementById('dayNumber');
-            const dayWeekEl = document.getElementById('dayWeek');
+            const bgWrapper = document.getElementById('bgWrapper');
+            const bgRefreshBtn = document.getElementById('bgRefresh');
+            const dateLabelEl = document.getElementById('dateLabel');
+            const weekdayLabelEl = document.getElementById('weekdayLabel');
             const liveTimeEl = document.getElementById('liveTime');
-            const prevMonthBtn = document.getElementById('prevMonthBtn');
-            const nextMonthBtn = document.getElementById('nextMonthBtn');
             const loadingDots = document.getElementById('loadingDots');
 
-            // ============================================================
-            //  2. 状态
-            // ============================================================
-            const today = new Date();
-            let viewYear = today.getFullYear();
-            let viewMonth = today.getMonth();
-            let viewDay = today.getDate();
+            let bgSeed = '';
+            let isBgLoading = false;
+            let currentObjectUrl = '';
+            let loadToken = 0;
+            const BG_CACHE_NAME = 'daily-bg-v1';
 
             // ============================================================
-            //  3. 工具函数
+            //  2. 工具函数
             // ============================================================
             function pad(n) {
                 return String(n).padStart(2, '0');
-            }
-
-            function formatDateKey(year, month, day) {
-                return `${year}-${pad(month + 1)}-${pad(day)}`;
             }
 
             function getWeekdayName(dayIndex) {
@@ -444,65 +365,165 @@
                 return names[dayIndex];
             }
 
-            // ============================================================
-            //  4. 更新背景图片（基于日期）
-            // ============================================================
-            function updateBackground(year, month, day) {
-                const dateKey = formatDateKey(year, month, day);
-                const url = `https://picsum.photos/seed/${dateKey}/1600/1000`;
-
-                loadingDots.classList.add('active');
-
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-
-                img.onload = function() {
-                    bgImage.src = url;
-                    bgImage.classList.add('loaded');
-                    bgImage.style.display = 'block';
-                    loadingDots.classList.remove('active');
-                };
-
-                img.onerror = function() {
-                    bgImage.style.display = 'none';
-                    const wrapper = document.getElementById('bgWrapper');
-                    const hue = (year * 31 + month * 13 + day * 7) % 360;
-                    wrapper.style.background =
-                        `linear-gradient(145deg, hsl(${hue}, 50%, 18%), hsl(${(hue + 40) % 360}, 45%, 10%))`;
-                    loadingDots.classList.remove('active');
-                    console.warn('背景图加载失败，使用纯色 fallback');
-                };
-
-                img.src = url;
-
-                if (img.complete) {
-                    bgImage.src = url;
-                    bgImage.classList.add('loaded');
-                    bgImage.style.display = 'block';
-                    loadingDots.classList.remove('active');
-                }
+            function getDateKey(date) {
+                return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
             }
 
-            // ============================================================
-            //  5. 更新日期 UI
-            // ============================================================
-            function renderDate(year, month, day) {
-                const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-                monthYearDisplay.textContent = `${year}年${monthNames[month]}`;
+            function getBgSize() {
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                const w = Math.min(1280, Math.round(window.innerWidth * dpr));
+                const h = Math.min(800, Math.round(window.innerHeight * dpr));
+                return {
+                    width: Math.max(640, w),
+                    height: Math.max(400, h)
+                };
+            }
 
-                const dateObj = new Date(year, month, day);
-                const dayOfWeek = dateObj.getDay();
-                dayNumberEl.textContent = day;
-                if (day >= 10) {
-                    dayNumberEl.classList.add('small');
+            function buildBgUrl(seed) {
+                const size = getBgSize();
+                // 按视口取尺寸，显著减小体积；.jpg 便于缓存命中
+                return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${size.width}/${size.height}.jpg`;
+            }
+
+            function setBgLoading(loading, showCenterDots) {
+                isBgLoading = loading;
+                loadingDots.classList.toggle('active', !!(loading && showCenterDots));
+                bgRefreshBtn.classList.toggle('is-loading', loading);
+                bgRefreshBtn.disabled = loading;
+            }
+
+            function applyBackgroundBlob(blob, keepVisible) {
+                const hadImage = bgImage.classList.contains('loaded') && !!bgImage.getAttribute('src');
+                const objectUrl = URL.createObjectURL(blob);
+                const prevUrl = currentObjectUrl;
+
+                const show = function() {
+                    bgImage.src = objectUrl;
+                    bgImage.style.display = 'block';
+                    currentObjectUrl = objectUrl;
+                    if (prevUrl && prevUrl !== objectUrl) {
+                        URL.revokeObjectURL(prevUrl);
+                    }
+                    requestAnimationFrame(function() {
+                        bgImage.classList.add('loaded');
+                    });
+                };
+
+                if (keepVisible && hadImage) {
+                    // 已有背景时先预解码，避免闪黑
+                    const probe = new Image();
+                    probe.onload = show;
+                    probe.onerror = show;
+                    probe.src = objectUrl;
                 } else {
-                    dayNumberEl.classList.remove('small');
+                    show();
                 }
-                dayWeekEl.textContent = getWeekdayName(dayOfWeek);
+            }
+
+            function cachePut(requestUrl, response) {
+                if (!('caches' in window)) return;
+                caches.open(BG_CACHE_NAME).then(function(cache) {
+                    cache.put(requestUrl, response);
+                }).catch(function() {});
+            }
+
+            function cacheMatch(requestUrl) {
+                if (!('caches' in window)) return Promise.resolve(null);
+                return caches.open(BG_CACHE_NAME).then(function(cache) {
+                    return cache.match(requestUrl);
+                }).catch(function() {
+                    return null;
+                });
             }
 
             // ============================================================
-            //  6. 实时时钟
+            //  3. 更新背景图片（缓存优先 + 按屏适配）
+            // ============================================================
+            function updateBackground(seed) {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth();
+                const day = now.getDate();
+                bgSeed = seed || getDateKey(now);
+                const url = buildBgUrl(bgSeed);
+                const token = ++loadToken;
+                const hasVisibleBg = bgImage.classList.contains('loaded');
+
+                setBgLoading(true, !hasVisibleBg);
+
+                cacheMatch(url).then(function(cached) {
+                    if (token !== loadToken) return null;
+                    if (cached) return cached.blob();
+                    return null;
+                }).then(function(cachedBlob) {
+                    if (token !== loadToken) return;
+                    if (cachedBlob) {
+                        applyBackgroundBlob(cachedBlob, true);
+                        setBgLoading(false, false);
+                        return;
+                    }
+
+                    return fetch(url, {
+                        mode: 'cors',
+                        credentials: 'omit'
+                    }).then(function(response) {
+                        if (!response.ok) throw new Error('bg fetch failed');
+                        const cloned = response.clone();
+                        cachePut(url, cloned);
+                        return response.blob();
+                    }).then(function(blob) {
+                        if (token !== loadToken) return;
+                        applyBackgroundBlob(blob, hasVisibleBg);
+                        setBgLoading(false, false);
+                    });
+                }).catch(function() {
+                    if (token !== loadToken) return;
+                    // fetch/CORS 失败时回退到 img 直载
+                    const img = new Image();
+                    img.decoding = 'async';
+                    img.onload = function() {
+                        if (token !== loadToken) return;
+                        bgImage.src = url;
+                        bgImage.style.display = 'block';
+                        requestAnimationFrame(function() {
+                            bgImage.classList.add('loaded');
+                        });
+                        setBgLoading(false, false);
+                    };
+                    img.onerror = function() {
+                        if (token !== loadToken) return;
+                        if (!hasVisibleBg) {
+                            bgImage.style.display = 'none';
+                            const hue = (year * 31 + month * 13 + day * 7 + bgSeed.length * 17) % 360;
+                            bgWrapper.style.background =
+                                `linear-gradient(145deg, hsl(${hue}, 50%, 18%), hsl(${(hue + 40) % 360}, 45%, 10%))`;
+                        }
+                        setBgLoading(false, false);
+                        console.warn('背景图加载失败，使用 fallback');
+                    };
+                    img.src = url;
+                });
+            }
+
+            function refreshBackground() {
+                if (isBgLoading) return;
+                updateBackground(`${getDateKey(new Date())}-${Date.now()}`);
+            }
+
+            // ============================================================
+            //  4. 更新日期显示
+            // ============================================================
+            function renderToday() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth() + 1;
+                const day = now.getDate();
+                dateLabelEl.textContent = `${year}年${month}月${day}日`;
+                weekdayLabelEl.textContent = getWeekdayName(now.getDay());
+            }
+
+            // ============================================================
+            //  5. 实时时钟
             // ============================================================
             function updateClock() {
                 const now = new Date();
@@ -511,85 +532,48 @@
                 const seconds = pad(now.getSeconds());
                 liveTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
             }
-            setInterval(updateClock, 1000);
-            updateClock();
 
             // ============================================================
-            //  7. 切换月份
+            //  6. 跨天自动刷新
             // ============================================================
-            function goToPrevMonth() {
-                if (viewMonth === 0) {
-                    viewYear--;
-                    viewMonth = 11;
-                } else {
-                    viewMonth--;
+            let lastDateKey = '';
+
+            function checkDateChange() {
+                const now = new Date();
+                const key = getDateKey(now);
+                if (key !== lastDateKey) {
+                    lastDateKey = key;
+                    renderToday();
+                    updateBackground(key);
+                    console.log(`📅 日期已更新: ${key}`);
                 }
-                const maxDay = new Date(viewYear, viewMonth + 1, 0).getDate();
-                if (viewDay > maxDay) viewDay = maxDay;
-                renderDate(viewYear, viewMonth, viewDay);
-                updateBackground(viewYear, viewMonth, viewDay);
             }
 
-            function goToNextMonth() {
-                if (viewMonth === 11) {
-                    viewYear++;
-                    viewMonth = 0;
-                } else {
-                    viewMonth++;
-                }
-                const maxDay = new Date(viewYear, viewMonth + 1, 0).getDate();
-                if (viewDay > maxDay) viewDay = maxDay;
-                renderDate(viewYear, viewMonth, viewDay);
-                updateBackground(viewYear, viewMonth, viewDay);
-            }
-
-            // 移除 goToToday，因为已去掉"今天"按钮
-
             // ============================================================
-            //  8. 初始化
+            //  7. 初始化
             // ============================================================
             function init() {
                 const now = new Date();
-                viewYear = now.getFullYear();
-                viewMonth = now.getMonth();
-                viewDay = now.getDate();
+                lastDateKey = getDateKey(now);
 
-                renderDate(viewYear, viewMonth, viewDay);
-                updateBackground(viewYear, viewMonth, viewDay);
+                renderToday();
+                updateBackground(lastDateKey);
+                updateClock();
 
-                prevMonthBtn.addEventListener('click', goToPrevMonth);
-                nextMonthBtn.addEventListener('click', goToNextMonth);
+                bgRefreshBtn.addEventListener('click', refreshBackground);
 
-                // 键盘支持：左右方向键切换月份
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'ArrowLeft') {
-                        e.preventDefault();
-                        goToPrevMonth();
-                    } else if (e.key === 'ArrowRight') {
-                        e.preventDefault();
-                        goToNextMonth();
-                    }
-                });
+                setInterval(updateClock, 1000);
+                setInterval(checkDateChange, 10000);
 
-                // 跨天自动更新
                 document.addEventListener('visibilitychange', function() {
                     if (!document.hidden) {
-                        const now = new Date();
-                        const todayKey = formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
-                        const currentKey = formatDateKey(viewYear, viewMonth, viewDay);
-                        if (todayKey !== currentKey) {
-                            // 自动跳转到今天
-                            viewYear = now.getFullYear();
-                            viewMonth = now.getMonth();
-                            viewDay = now.getDate();
-                            renderDate(viewYear, viewMonth, viewDay);
-                            updateBackground(viewYear, viewMonth, viewDay);
-                        }
+                        checkDateChange();
+                        updateClock();
                     }
                 });
 
-                console.log('📅 透明极简模式已启动，每日更新图片，滚动时钟运行中');
-                console.log(`📍 当前日期: ${viewYear}年${viewMonth+1}月${viewDay}日`);
+                console.log('📅 已启动：每日背景 + 实时时钟');
+                console.log(`📍 当前日期: ${lastDateKey}`);
             }
 
             if (document.readyState === 'complete') {
