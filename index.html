@@ -1,669 +1,843 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>FLUX NEBULA — 螺旋星域 | Three.js</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:opsz,wght@14..32,300;14..32,500;14..32,600&display=swap" rel="stylesheet" />
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.172.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.172.0/examples/jsm/"
-      }
-    }
-  </script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      user-select: none;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>每日日历 · PC 宽屏版</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+    <style>
+        /* ===== 全局重置 ===== */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-      overflow: hidden;
-      background: #020108;
-      font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
-    }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #0f0f1a;
+            color: #fff;
+            user-select: none;
+            padding: 20px;
+        }
 
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      cursor: grab;
-      touch-action: none;
-      outline: none;
-    }
+        /* ===== 背景图容器 ===== */
+        .bg-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            transition: opacity 0.8s ease;
+            background: #1a1a2e;
+        }
+        .bg-wrapper img {
+            display: none;
+        }
+        .bg-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+        .bg-image.loaded {
+            opacity: 1;
+        }
+        /* 遮罩层 */
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: linear-gradient(145deg,
+                    rgba(10, 10, 30, 0.45) 0%,
+                    rgba(10, 10, 30, 0.15) 40%,
+                    rgba(10, 10, 30, 0.45) 80%,
+                    rgba(10, 10, 30, 0.75) 100%);
+            pointer-events: none;
+        }
 
-    canvas:active {
-      cursor: grabbing;
-    }
+        /* ===== 日历卡片 (PC 优化) ===== */
+        .calendar-card {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 780px;
+            padding: 36px 40px 32px;
+            border-radius: 48px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(28px) saturate(1.3);
+            -webkit-backdrop-filter: blur(28px) saturate(1.3);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            box-shadow:
+                0 40px 100px rgba(0, 0, 0, 0.60),
+                0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+            transition: transform 0.3s ease, box-shadow 0.4s ease;
+        }
+        .calendar-card:hover {
+            transform: translateY(-4px);
+            box-shadow:
+                0 60px 140px rgba(0, 0, 0, 0.70),
+                0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+        }
 
-    /* 全新界面层：精致玻璃面板 + 动态光晕 */
-    .hud {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 20;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 2rem 2rem 1.5rem;
-    }
+        /* ===== 头部：月份导航 ===== */
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding: 0 4px;
+        }
+        .month-year {
+            font-size: 22px;  /* 调小月份标题 */
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: rgba(255, 255, 255, 0.92);
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.30);
+        }
+        .nav-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.20);
+        }
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            transform: scale(1.06);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.30);
+        }
+        .nav-btn:active {
+            transform: scale(0.92);
+            background: rgba(255, 255, 255, 0.25);
+        }
 
-    .title-section {
-      text-align: center;
-      pointer-events: auto;
-      backdrop-filter: blur(8px);
-      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(20, 12, 40, 0.35), transparent 70%);
-      padding: 1rem 1rem 2rem;
-      border-radius: 0 0 60px 60px;
-    }
+        /* ===== 日期主显示 ===== */
+        .date-main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0 12px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .day-number {
+            font-size: 100px;  /* 调小日期数字 */
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.03em;
+            color: #fff;
+            text-shadow: 0 4px 40px rgba(0, 0, 0, 0.40);
+            transition: transform 0.3s ease;
+        }
+        .day-number.small {
+            font-size: 76px;
+        }
+        .day-week {
+            font-size: 20px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.80);
+            letter-spacing: 0.08em;
+            margin-top: 4px;
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+        }
+        /* 新增：滚动时间 */
+        .live-time {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 0.12em;
+            color: rgba(255, 255, 255, 0.70);
+            margin-top: 6px;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+            background: rgba(0, 0, 0, 0.15);
+            padding: 4px 20px;
+            border-radius: 60px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
 
-    .title {
-      font-family: 'Orbitron', monospace;
-      font-weight: 900;
-      font-size: clamp(2.5rem, 9vw, 6rem);
-      letter-spacing: 0.18em;
-      background: linear-gradient(135deg, #b0f3ff 0%, #ff6ec7 35%, #b77eff 65%, #ffe6a3 100%);
-      background-size: 250% 100%;
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      animation: shimmer 12s ease infinite;
-      text-shadow: 0 0 45px rgba(127, 90, 255, 0.6);
-      filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.4));
-    }
+        /* ===== 日历网格 ===== */
+        .grid-wrap {
+            margin-top: 8px;
+        }
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 6px;
+            padding: 0 4px;
+        }
+        .weekdays span {
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.50);
+            letter-spacing: 0.06em;
+            padding: 6px 0;
+        }
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            padding: 0 4px;
+        }
+        .day-cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;  /* 调小日期格子数字 */
+            font-weight: 500;
+            border-radius: 16px;
+            color: rgba(255, 255, 255, 0.85);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.02);
+            position: relative;
+            box-shadow: 0 0 0 0 transparent;
+        }
+        .day-cell:hover {
+            background: rgba(255, 255, 255, 0.10);
+            transform: scale(1.06);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.20);
+        }
+        .day-cell:active {
+            transform: scale(0.92);
+        }
+        .day-cell.empty {
+            cursor: default;
+            background: transparent !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        .day-cell.empty:hover {
+            transform: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        /* 今天高亮 */
+        .day-cell.today {
+            background: rgba(255, 215, 0, 0.20);
+            color: #ffd866;
+            font-weight: 700;
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.30), 0 4px 24px rgba(255, 215, 0, 0.10);
+        }
+        .day-cell.today:hover {
+            background: rgba(255, 215, 0, 0.30);
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.45), 0 6px 32px rgba(255, 215, 0, 0.15);
+        }
+        /* 选中（非今天） */
+        .day-cell.selected {
+            background: rgba(255, 255, 255, 0.14);
+            font-weight: 700;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+        }
+        .day-cell.selected:hover {
+            background: rgba(255, 255, 255, 0.22);
+        }
+        /* 周末颜色微差 */
+        .day-cell.weekend {
+            color: rgba(255, 180, 180, 0.75);
+        }
+        .day-cell.today.weekend {
+            color: #ffd866;
+        }
 
-    @keyframes shimmer {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
+        /* ===== 底部 ===== */
+        .card-footer {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .today-btn {
+            padding: 10px 36px;
+            border: none;
+            border-radius: 60px;
+            background: rgba(255, 215, 0, 0.12);
+            color: #ffd866;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 215, 0, 0.12);
+        }
+        .today-btn:hover {
+            background: rgba(255, 215, 0, 0.22);
+            transform: scale(1.04);
+            border-color: rgba(255, 215, 0, 0.30);
+            box-shadow: 0 4px 32px rgba(255, 215, 0, 0.10);
+        }
+        .today-btn:active {
+            transform: scale(0.94);
+        }
 
-    .sub {
-      margin-top: 0.5rem;
-      font-size: clamp(0.7rem, 2vw, 0.9rem);
-      font-weight: 500;
-      letter-spacing: 0.35em;
-      color: rgba(220, 230, 255, 0.7);
-      text-transform: uppercase;
-      backdrop-filter: blur(4px);
-    }
+        /* ===== 底部信息 ===== */
+        .credit {
+            position: fixed;
+            bottom: 28px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            z-index: 3;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.20);
+            letter-spacing: 0.08em;
+            pointer-events: none;
+            font-weight: 300;
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.50);
+        }
+        .credit a {
+            color: rgba(255, 255, 255, 0.25);
+            text-decoration: none;
+            pointer-events: auto;
+            transition: color 0.3s ease;
+        }
+        .credit a:hover {
+            color: rgba(255, 255, 255, 0.55);
+        }
 
-    .metric-card {
-      pointer-events: auto;
-      align-self: flex-end;
-      background: rgba(8, 6, 20, 0.55);
-      backdrop-filter: blur(16px);
-      border-radius: 32px;
-      padding: 0.6rem 1.2rem;
-      border: 1px solid rgba(79, 210, 255, 0.3);
-      box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.08);
-      font-family: monospace;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #adeeff;
-      letter-spacing: 0.04em;
-    }
+        /* ===== 加载状态 ===== */
+        .loading-dots {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            display: flex;
+            gap: 12px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+        .loading-dots.active {
+            opacity: 1;
+        }
+        .loading-dots span {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.30);
+            display: inline-block;
+            animation: dotPulse 1.4s infinite ease-in-out both;
+        }
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0s;
+        }
+        @keyframes dotPulse {
+            0%,
+            80%,
+            100% {
+                transform: scale(0.6);
+                opacity: 0.3;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
 
-    .hint-text {
-      pointer-events: none;
-      text-align: center;
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
-      color: rgba(150, 170, 220, 0.5);
-      text-transform: uppercase;
-      font-weight: 400;
-      background: linear-gradient(90deg, transparent, rgba(80, 180, 255, 0.2), transparent);
-      width: fit-content;
-      margin: 0 auto;
-      padding: 0.5rem 1rem;
-      border-radius: 60px;
-    }
+        /* ===== PC 大屏专用优化 (≥1024px) ===== */
+        @media (min-width: 1024px) {
+            .calendar-card {
+                max-width: 720px;  /* 稍微收窄一点，更精致 */
+                padding: 40px 48px 36px;
+                border-radius: 56px;
+            }
+            .month-year {
+                font-size: 24px;
+            }
+            .nav-btn {
+                width: 48px;
+                height: 48px;
+                font-size: 26px;
+            }
+            .day-number {
+                font-size: 110px;
+            }
+            .day-number.small {
+                font-size: 84px;
+            }
+            .day-week {
+                font-size: 21px;
+            }
+            .live-time {
+                font-size: 30px;
+                padding: 6px 24px;
+            }
+            .day-cell {
+                font-size: 20px;
+                border-radius: 18px;
+            }
+            .weekdays span {
+                font-size: 15px;
+                padding: 8px 0;
+            }
+            .days-grid {
+                gap: 8px;
+            }
+            .today-btn {
+                font-size: 17px;
+                padding: 10px 40px;
+            }
+        }
 
-    @media (max-width: 600px) {
-      .hud { padding: 1rem; }
-      .metric-card { font-size: 0.65rem; }
-      .hint-text { font-size: 0.6rem; }
-    }
+        /* ===== 中等屏幕 (768px ~ 1023px) ===== */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .calendar-card {
+                max-width: 660px;
+                padding: 32px 36px 28px;
+                border-radius: 44px;
+            }
+            .day-number {
+                font-size: 96px;
+            }
+            .day-number.small {
+                font-size: 72px;
+            }
+            .day-cell {
+                font-size: 17px;
+            }
+            .live-time {
+                font-size: 26px;
+            }
+        }
 
-    /* 装饰性扫描线（可选） */
-    .scan-line {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      background: repeating-linear-gradient(0deg, rgba(0,255,200,0.02) 0px, rgba(0,255,200,0.02) 2px, transparent 2px, transparent 8px);
-      z-index: 25;
-      opacity: 0.25;
-    }
-  </style>
+        /* ===== 小屏/移动端 (≤767px) ===== */
+        @media (max-width: 767px) {
+            .calendar-card {
+                padding: 24px 18px 20px;
+                border-radius: 32px;
+                max-width: 440px;
+            }
+            .month-year {
+                font-size: 18px;
+            }
+            .nav-btn {
+                width: 38px;
+                height: 38px;
+                font-size: 20px;
+            }
+            .day-number {
+                font-size: 72px;
+            }
+            .day-number.small {
+                font-size: 56px;
+            }
+            .day-week {
+                font-size: 17px;
+            }
+            .live-time {
+                font-size: 22px;
+                padding: 2px 16px;
+            }
+            .day-cell {
+                font-size: 15px;
+                border-radius: 10px;
+            }
+            .weekdays span {
+                font-size: 12px;
+            }
+            .days-grid {
+                gap: 3px;
+            }
+            .today-btn {
+                font-size: 14px;
+                padding: 8px 24px;
+            }
+            .credit {
+                font-size: 11px;
+                bottom: 16px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .calendar-card {
+                padding: 16px 12px 14px;
+                border-radius: 24px;
+            }
+            .day-number {
+                font-size: 56px;
+            }
+            .day-number.small {
+                font-size: 44px;
+            }
+            .day-cell {
+                font-size: 13px;
+                border-radius: 8px;
+            }
+            .month-year {
+                font-size: 16px;
+            }
+            .live-time {
+                font-size: 18px;
+            }
+        }
+
+        /* 暗色滚动条 */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
-  <div class="hud">
-    <div class="title-section">
-      <h1 class="title">FLUX NEBULA</h1>
-      <p class="sub">螺旋星云 · 动态光谱</p>
+
+    <!-- ===== 加载指示器 ===== -->
+    <div class="loading-dots" id="loadingDots">
+        <span></span><span></span><span></span>
     </div>
-    <div class="metric-card" id="stats-panel">
-      ⚡ 载入星尘中 ...
+
+    <!-- ===== 背景图 ===== -->
+    <div class="bg-wrapper" id="bgWrapper">
+        <img class="bg-image" id="bgImage" alt="每日背景图" />
     </div>
-    <div class="hint-text">
-      ✦ 拖拽旋转视角 | 滚轮缩放星域 ✦
+    <div class="bg-overlay"></div>
+
+    <!-- ===== 日历卡片 ===== -->
+    <div class="calendar-card" id="calendarCard">
+
+        <!-- 头部 -->
+        <div class="card-header">
+            <button class="nav-btn" id="prevMonthBtn" aria-label="上个月">‹</button>
+            <span class="month-year" id="monthYearDisplay">2026年9月</span>
+            <button class="nav-btn" id="nextMonthBtn" aria-label="下个月">›</button>
+        </div>
+
+        <!-- 日期主显示 + 滚动时间 -->
+        <div class="date-main">
+            <div class="day-number" id="dayNumber">8</div>
+            <div class="day-week" id="dayWeek">星期二</div>
+            <!-- 新增滚动时间 -->
+            <div class="live-time" id="liveTime">00:00:00</div>
+        </div>
+
+        <!-- 日历网格 -->
+        <div class="grid-wrap">
+            <div class="weekdays">
+                <span>日</span><span>一</span><span>二</span>
+                <span>三</span><span>四</span><span>五</span><span>六</span>
+            </div>
+            <div class="days-grid" id="daysGrid"></div>
+        </div>
+
+        <!-- 底部 -->
+        <div class="card-footer">
+            <button class="today-btn" id="todayBtn">✦ 今天</button>
+        </div>
     </div>
-  </div>
-  <div class="scan-line"></div>
 
-  <script type="module">
-    import * as THREE from "three";
-    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    <!-- ===== 版权信息 ===== -->
+    <div class="credit">
+        图片来自 <a href="https://picsum.photos" target="_blank" rel="noopener">picsum.photos</a>
+        &nbsp;·&nbsp; 每日更新
+    </div>
 
-    // ---------- 配置参数 ----------
-    const canvas = document.getElementById("canvas");
-    const statsPanel = document.getElementById("stats-panel");
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    
-    // 精致配色 —— 深空幻彩
-    const COLORS = {
-      core: new THREE.Color(0xff66cc),
-      arm1: new THREE.Color(0x2affde),   // 冰蓝绿
-      arm2: new THREE.Color(0xbd7eff),   // 紫罗兰
-      arm3: new THREE.Color(0xff9f5e),   // 暖金橙
-      dust: new THREE.Color(0x7a4dff),
-      bg: 0x02010a
-    };
+    <script>
+        (function() {
+            'use strict';
 
-    // 渲染核心变量
-    let scene, camera, renderer, controls;
-    let mainParticleSystem, starFieldSystem;
-    let mainGeo, basePositionsArray;     // 存储原始位置用于动态脉冲
-    let outerRing, innerCoreRing, glowHalo;
-    let pointLights = [];
-    let clock = new THREE.Clock();
-    let mouse = { x: 0, y: 0, active: false };
+            // ============================================================
+            //  1. DOM 引用
+            // ============================================================
+            const bgImage = document.getElementById('bgImage');
+            const monthYearDisplay = document.getElementById('monthYearDisplay');
+            const dayNumberEl = document.getElementById('dayNumber');
+            const dayWeekEl = document.getElementById('dayWeek');
+            const liveTimeEl = document.getElementById('liveTime');
+            const daysGrid = document.getElementById('daysGrid');
+            const prevMonthBtn = document.getElementById('prevMonthBtn');
+            const nextMonthBtn = document.getElementById('nextMonthBtn');
+            const todayBtn = document.getElementById('todayBtn');
+            const loadingDots = document.getElementById('loadingDots');
 
-    // 粒子纹理 (圆形渐变光晕)
-    function createParticleTexture() {
-      const canvasTex = document.createElement("canvas");
-      canvasTex.width = 32;
-      canvasTex.height = 32;
-      const ctx = canvasTex.getContext("2d");
-      ctx.beginPath();
-      ctx.arc(16, 16, 14, 0, 2 * Math.PI);
-      ctx.fillStyle = "white";
-      ctx.fill();
-      ctx.globalCompositeOperation = "source-over";
-      ctx.shadowBlur = 0;
-      const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 14);
-      gradient.addColorStop(0, "rgba(255,255,255,1)");
-      gradient.addColorStop(0.4, "rgba(255,180,100,0.9)");
-      gradient.addColorStop(0.7, "rgba(120,80,200,0.6)");
-      gradient.addColorStop(1, "rgba(50,30,100,0)");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 32, 32);
-      const texture = new THREE.CanvasTexture(canvasTex);
-      texture.needsUpdate = true;
-      return texture;
-    }
+            // ============================================================
+            //  2. 状态
+            // ============================================================
+            const today = new Date();
+            let viewYear = today.getFullYear();
+            let viewMonth = today.getMonth();
+            let viewDay = today.getDate();
+            let isLoading = false;
 
-    // 生成螺旋星系粒子 (位置 + 基于半径/臂的丰富颜色)
-    function generateSpiralGalaxy(particleCount, useReduced = false) {
-      const count = useReduced ? Math.min(3800, particleCount) : particleCount;
-      const positions = new Float32Array(count * 3);
-      const colors = new Float32Array(count * 3);
-      const basePos = new Float32Array(count * 3);
-      
-      // 螺旋参数: 3条主臂 + 弥散晕
-      const arms = 3;
-      const spiralTightness = 2.8;
-      const armSpread = 0.45;      // 臂的弥散角度
-      const innerRadius = 1.2;
-      const outerRadius = 12.5;
-      
-      for (let i = 0; i < count; i++) {
-        // 决定粒子类型：80% 概率属于旋臂，20% 弥散晕背景
-        const isArm = Math.random() < 0.82;
-        let r, angle, yOffset;
-        
-        if (isArm) {
-          // 选择旋臂 (0 ~ arms-1)
-          const armIdx = Math.floor(Math.random() * arms);
-          const armAngleOffset = (armIdx / arms) * Math.PI * 2;
-          // 半径分布 (偏向外部丰富)
-          r = innerRadius + Math.pow(Math.random(), 1.2) * (outerRadius - innerRadius);
-          // 对数螺旋角度: theta = offset + b * ln(r)
-          const spiralAngle = armAngleOffset + spiralTightness * Math.log(r + 0.5);
-          // 随机偏移制造宽度感
-          const randomAngleJitter = (Math.random() - 0.5) * armSpread * (1 + r * 0.12);
-          angle = spiralAngle + randomAngleJitter;
-          // 厚度: 中心厚边缘薄
-          yOffset = Math.sin(r * 1.2) * 0.25 * (1 - r / outerRadius) + (Math.random() - 0.5) * 0.38;
-          yOffset *= (1 - r / outerRadius * 0.6);
-        } else {
-          // 弥散晕: 球形随机分布，半径在外围区间
-          r = innerRadius + Math.random() * (outerRadius + 1.5);
-          angle = Math.random() * Math.PI * 2;
-          yOffset = (Math.random() - 0.5) * 1.4;
-        }
-        
-        const x = Math.cos(angle) * r;
-        const z = Math.sin(angle) * r;
-        const y = yOffset * 1.2 + (Math.random() - 0.5) * 0.18;
-        
-        const i3 = i * 3;
-        positions[i3] = x;
-        positions[i3 + 1] = y;
-        positions[i3 + 2] = z;
-        basePos[i3] = x;
-        basePos[i3 + 1] = y;
-        basePos[i3 + 2] = z;
-        
-        // 动态颜色: 基于半径 + 角度，创造绚烂渐变
-        const normR = (r - innerRadius) / (outerRadius - innerRadius);
-        let rCol, gCol, bCol;
-        
-        if (r < 2.5) {
-          // 核心炽热区
-          const tCore = Math.min(1, r / 2.2);
-          const coreGlow = new THREE.Color(0xff44aa);
-          const midGlow = new THREE.Color(0xffaa66);
-          const col = coreGlow.clone().lerp(midGlow, tCore);
-          rCol = col.r * (0.8 + Math.random() * 0.4);
-          gCol = col.g * (0.7 + Math.random() * 0.5);
-          bCol = col.b * (0.9 + Math.random() * 0.3);
-        } else {
-          // 旋臂区域华丽光谱
-          const armMix = Math.sin(angle * 2.5) * 0.5 + 0.5;
-          const mixVal = (normR + armMix * 0.4) * 0.9;
-          let baseColor;
-          if (normR < 0.4) baseColor = COLORS.arm1.clone();
-          else if (normR < 0.7) baseColor = COLORS.arm2.clone();
-          else baseColor = COLORS.arm3.clone();
-          
-          // 加入一些随机暖色成分
-          const extraGold = new THREE.Color(0xffc285);
-          const finalColor = baseColor.clone().lerp(extraGold, Math.random() * 0.5);
-          // 根据位置亮度微调
-          let brightness = 0.7 + (1 - normR) * 0.5 + Math.random() * 0.4;
-          rCol = finalColor.r * brightness;
-          gCol = finalColor.g * brightness;
-          bCol = finalColor.b * brightness;
-          
-          // 某些粒子带紫色脉冲感
-          if (Math.random() > 0.85) {
-            rCol += 0.25;
-            bCol += 0.3;
-          }
-        }
-        
-        colors[i3] = Math.min(1.0, rCol);
-        colors[i3 + 1] = Math.min(1.0, gCol);
-        colors[i3 + 2] = Math.min(1.0, bCol);
-      }
-      
-      return { positions, colors, basePos, count };
-    }
+            // ============================================================
+            //  3. 工具函数
+            // ============================================================
+            function pad(n) {
+                return String(n).padStart(2, '0');
+            }
 
-    // 生成背景星空 (深邃层)
-    function createBackgroundStars(count = 1800) {
-      const geom = new THREE.BufferGeometry();
-      const positions = new Float32Array(count * 3);
-      const colorsBg = new Float32Array(count * 3);
-      for (let i = 0; i < count; i++) {
-        // 分布在更大的球壳范围
-        const radius = 25 + Math.random() * 45;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        const x = radius * Math.sin(phi) * Math.cos(theta);
-        const y = radius * Math.sin(phi) * Math.sin(theta) * 0.6; // 轻微扁平
-        const z = radius * Math.cos(phi);
-        positions[i*3] = x;
-        positions[i*3+1] = y;
-        positions[i*3+2] = z;
-        const intensity = 0.35 + Math.random() * 0.65;
-        colorsBg[i*3] = intensity * 0.8;
-        colorsBg[i*3+1] = intensity * 0.85;
-        colorsBg[i*3+2] = intensity;
-      }
-      geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      geom.setAttribute("color", new THREE.BufferAttribute(colorsBg, 3));
-      const starMat = new THREE.PointsMaterial({
-        size: 0.09,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.6,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
-      });
-      return new THREE.Points(geom, starMat);
-    }
+            function formatDateKey(year, month, day) {
+                return `${year}-${pad(month + 1)}-${pad(day)}`;
+            }
 
-    // 创建精致光环 (升级版双层)
-    function createRings() {
-      // 主光环: 冰晶环
-      const ringMat = new THREE.MeshStandardMaterial({
-        color: 0x4effe0,
-        emissive: 0x1a6f6f,
-        emissiveIntensity: 0.55,
-        metalness: 0.7,
-        roughness: 0.3,
-        transparent: true,
-        opacity: 0.45,
-        side: THREE.DoubleSide
-      });
-      const mainRing = new THREE.Mesh(new THREE.TorusGeometry(3.25, 0.045, 64, 300), ringMat);
-      
-      // 第二层流光细环
-      const glowRingMat = new THREE.MeshBasicMaterial({
-        color: 0xff60b0,
-        transparent: true,
-        opacity: 0.35,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide
-      });
-      const auraRing = new THREE.Mesh(new THREE.TorusGeometry(3.65, 0.022, 32, 500), glowRingMat);
-      
-      // 核心漩涡小环 (炽热)
-      const coreRingMat = new THREE.MeshStandardMaterial({
-        color: 0xffaa77,
-        emissive: 0xdd4488,
-        emissiveIntensity: 0.8,
-        transparent: true,
-        opacity: 0.9
-      });
-      const innerGlowRing = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.035, 32, 120), coreRingMat);
-      
-      return { mainRing, auraRing, innerGlowRing };
-    }
+            function getWeekdayName(dayIndex) {
+                const names = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                return names[dayIndex];
+            }
 
-    // 添加动态粒子光晕层 (围绕核心)
-    function addCorePulseHalo() {
-      const geometry = new THREE.BufferGeometry();
-      const coreCount = 550;
-      const positions = new Float32Array(coreCount * 3);
-      const colorsCore = new Float32Array(coreCount * 3);
-      for (let i = 0; i < coreCount; i++) {
-        const radius = 0.6 + Math.random() * 1.1;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        const x = radius * Math.sin(phi) * Math.cos(theta);
-        const y = radius * Math.sin(phi) * Math.sin(theta) * 0.5;
-        const z = radius * Math.cos(phi);
-        positions[i*3] = x;
-        positions[i*3+1] = y;
-        positions[i*3+2] = z;
-        const hotness = 0.6 + Math.random() * 0.5;
-        colorsCore[i*3] = 1.0;
-        colorsCore[i*3+1] = 0.5 + Math.random()*0.5;
-        colorsCore[i*3+2] = 0.8 + Math.random()*0.2;
-      }
-      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute("color", new THREE.BufferAttribute(colorsCore, 3));
-      const haloMat = new THREE.PointsMaterial({ size: 0.045, vertexColors: true, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false });
-      return new THREE.Points(geometry, haloMat);
-    }
+            function isWeekend(dayIndex) {
+                return dayIndex === 0 || dayIndex === 6;
+            }
 
-    // 更新UI统计显示
-    function updateStatsUI(particleCount, dpr) {
-      statsPanel.innerHTML = `✨ 星尘粒子 ${particleCount.toLocaleString()}  |  SPIRAL NEBULA  |  DPR ${dpr.toFixed(1)} ✨`;
-    }
+            // ============================================================
+            //  4. 更新背景图片（基于日期）
+            // ============================================================
+            function updateBackground(year, month, day) {
+                const dateKey = formatDateKey(year, month, day);
+                const url = `https://picsum.photos/seed/${dateKey}/1600/1000`;
 
-    function init() {
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(COLORS.bg);
-      scene.fog = new THREE.FogExp2(0x020108, 0.022); // 深邃雾效
-      
-      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
-      camera.position.set(2.5, 2.2, 14.5);
-      
-      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setClearColor(0x02010a, 1);
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.12;
-      
-      controls = new OrbitControls(camera, canvas);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.07;
-      controls.rotateSpeed = 1.0;
-      controls.zoomSpeed = 1.2;
-      controls.minDistance = 4.8;
-      controls.maxDistance = 28;
-      controls.autoRotate = !reducedMotion;
-      controls.autoRotateSpeed = reducedMotion ? 0.15 : 0.48;
-      controls.target.set(0, 0.2, 0);
-      
-      // --- 生成主星系粒子 (螺旋) ---
-      const targetCount = reducedMotion ? 4100 : 8600;
-      const { positions, colors, basePos, count } = generateSpiralGalaxy(targetCount, reducedMotion);
-      mainGeo = new THREE.BufferGeometry();
-      mainGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      mainGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-      basePositionsArray = basePos;
-      
-      const particleTexture = createParticleTexture();
-      const pointsMaterial = new THREE.PointsMaterial({
-        size: reducedMotion ? 0.085 : 0.075,
-        map: particleTexture,
-        vertexColors: true,
-        blending: THREE.AdditiveBlending,
-        transparent: true,
-        opacity: 0.95,
-        depthWrite: false
-      });
-      mainParticleSystem = new THREE.Points(mainGeo, pointsMaterial);
-      scene.add(mainParticleSystem);
-      
-      // 背景星辰
-      starFieldSystem = createBackgroundStars(reducedMotion ? 1200 : 2100);
-      scene.add(starFieldSystem);
-      
-      // 核心光晕粒子层
-      const coreHaloPoints = addCorePulseHalo();
-      scene.add(coreHaloPoints);
-      
-      // 精致光环系统
-      const { mainRing, auraRing, innerGlowRing } = createRings();
-      scene.add(mainRing);
-      scene.add(auraRing);
-      scene.add(innerGlowRing);
-      // 存储引用以便动画
-      window.rings = { mainRing, auraRing, innerGlowRing, coreHaloPoints };
-      
-      // 增强照明: 动态点光源 + 环境光 + 方向光
-      const ambient = new THREE.AmbientLight(0x2c2650, 0.45);
-      scene.add(ambient);
-      
-      const dirLight = new THREE.DirectionalLight(0xc2adff, 0.65);
-      dirLight.position.set(3, 8, 5);
-      scene.add(dirLight);
-      
-      // 三个华丽的彩色动态光源
-      const light1 = new THREE.PointLight(0xff3d8a, 1.2, 35);
-      const light2 = new THREE.PointLight(0x2fffd4, 1.4, 38);
-      const light3 = new THREE.PointLight(0xaa6eff, 1.1, 40);
-      light1.position.set(5, 2, 6);
-      light2.position.set(-4, 3, -7);
-      light3.position.set(3, -2, 9);
-      scene.add(light1, light2, light3);
-      pointLights = [light1, light2, light3];
-      
-      // 增加辅助背光
-      const backLight = new THREE.PointLight(0x4477dd, 0.55);
-      backLight.position.set(-2, 1, -11);
-      scene.add(backLight);
-      
-      // 额外装饰: 极细粒子流线 (绕旋臂动态效果)
-      const dustGeo = new THREE.BufferGeometry();
-      const dustCount = 1500;
-      const dustPos = [];
-      for (let i = 0; i < dustCount; i++) {
-        const r = 2.5 + Math.random() * 10;
-        const angle = Math.random() * Math.PI * 2;
-        const offY = (Math.random() - 0.5) * 0.7;
-        dustPos.push(Math.cos(angle) * r, offY, Math.sin(angle) * r);
-      }
-      dustGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(dustPos), 3));
-      const dustMat = new THREE.PointsMaterial({ color: 0xffa97c, size: 0.032, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
-      const dustParticles = new THREE.Points(dustGeo, dustMat);
-      scene.add(dustParticles);
-      window.dustParticles = dustParticles;
-      
-      // 保存额外全局引用
-      window.extraDust = dustParticles;
-      window.extraCoreHalo = coreHaloPoints;
-    }
+                loadingDots.classList.add('active');
 
-    // 粒子动态呼吸 + 轻微旋臂扭曲流动 (增强生机动感)
-    function animateParticles(elapsedTime) {
-      if (!mainGeo || !basePositionsArray) return;
-      const positionsAttr = mainGeo.attributes.position.array;
-      const count = basePositionsArray.length / 3;
-      const breathSpeed = reducedMotion ? 0.7 : 1.65;
-      const wave1 = Math.sin(elapsedTime * 0.5) * 0.022;
-      const wave2 = Math.cos(elapsedTime * 0.73) * 0.018;
-      
-      for (let i = 0; i < count; i++) {
-        const i3 = i * 3;
-        const bx = basePositionsArray[i3];
-        const by = basePositionsArray[i3+1];
-        const bz = basePositionsArray[i3+2];
-        // 呼吸效果 (径向微移)
-        const rOrig = Math.hypot(bx, bz);
-        const factor = 1 + (Math.sin(elapsedTime * 0.82 + rOrig * 1.2) * 0.012 + wave1 + wave2 * 0.6);
-        let nx = bx * factor;
-        let nz = bz * factor;
-        let ny = by + Math.sin(elapsedTime * 1.2 + bx * 0.8) * 0.008;
-        // 轻微螺旋漂移 (营造星河流转)
-        const driftAngle = elapsedTime * 0.12;
-        if (rOrig > 1.5 && !reducedMotion) {
-          const cosA = Math.cos(driftAngle * 0.5);
-          const sinA = Math.sin(driftAngle * 0.5);
-          nx = bx * cosA - bz * sinA * 0.08;
-          nz = bz * cosA + bx * sinA * 0.08;
-        }
-        positionsAttr[i3] = nx;
-        positionsAttr[i3+1] = ny;
-        positionsAttr[i3+2] = nz;
-      }
-      mainGeo.attributes.position.needsUpdate = true;
-    }
-    
-    // 光环动画 + 灯光色彩流动
-    function animateRingsAndLights(elapsed) {
-      if (window.rings) {
-        const { mainRing, auraRing, innerGlowRing, coreHaloPoints } = window.rings;
-        mainRing.rotation.x = Math.sin(elapsed * 0.2) * 0.12;
-        mainRing.rotation.z = elapsed * 0.09;
-        auraRing.rotation.y = elapsed * 0.11;
-        auraRing.rotation.x = elapsed * 0.07;
-        innerGlowRing.rotation.z = elapsed * 0.23;
-        innerGlowRing.rotation.y = elapsed * 0.17;
-        // 脉动强度
-        const pulse = 0.7 + Math.sin(elapsed * 2.5) * 0.2;
-        innerGlowRing.material.emissiveIntensity = 0.65 + Math.sin(elapsed * 3.2) * 0.3;
-        if (mainRing.material) mainRing.material.emissiveIntensity = 0.4 + Math.sin(elapsed) * 0.15;
-        // 核心光晕粒子云整体旋转
-        if (coreHaloPoints) {
-          coreHaloPoints.rotation.y = elapsed * 0.2;
-          coreHaloPoints.rotation.x = Math.sin(elapsed * 0.5) * 0.1;
-        }
-      }
-      // 动态星尘层缓慢自转
-      if (window.extraDust) {
-        window.extraDust.rotation.y = elapsed * 0.032;
-        window.extraDust.rotation.x = Math.sin(elapsed * 0.21) * 0.08;
-      }
-      
-      // 动态光源色温变化
-      if (pointLights.length >= 3) {
-        const hueShift = elapsed * 0.35;
-        const rCol = 0.8 + Math.sin(hueShift) * 0.35;
-        const gCol = 0.5 + Math.cos(hueShift * 0.9) * 0.5;
-        const bCol = 0.9 + Math.sin(hueShift * 1.2) * 0.4;
-        pointLights[0].color.setRGB(rCol, 0.3 + gCol*0.3, 0.9);
-        pointLights[1].color.setRGB(0.3 + Math.sin(hueShift)*0.5, 0.9, 0.6 + Math.cos(hueShift*0.7)*0.3);
-        pointLights[2].color.setRGB(0.7 + Math.sin(hueShift*0.5)*0.3, 0.4 + Math.cos(hueShift)*0.5, 1.0);
-        
-        // 动态位置旋转
-        const t = elapsed * 0.28;
-        pointLights[0].position.x = 6.5 * Math.cos(t);
-        pointLights[0].position.z = 5.5 * Math.sin(t * 0.9);
-        pointLights[1].position.x = -5.2 * Math.sin(t * 0.7);
-        pointLights[1].position.z = -4.8 * Math.cos(t * 0.5);
-        pointLights[2].position.x = 3.2 * Math.sin(t * 0.4);
-        pointLights[2].position.y = 4 + Math.sin(t * 1.1) * 2;
-      }
-    }
-    
-    // 鼠标视差轻微影响控制器焦点
-    function handleParallax() {
-      if (reducedMotion) return;
-      const normX = (mouse.x / window.innerWidth) * 2 - 1;
-      const normY = (mouse.y / window.innerHeight) * 2 - 1;
-      if (mouse.active) {
-        const targetX = normX * 0.45;
-        const targetY = -normY * 0.35;
-        controls.target.x += (targetX - controls.target.x) * 0.045;
-        controls.target.y += (targetY - controls.target.y) * 0.045;
-      } else {
-        controls.target.x *= 0.98;
-        controls.target.y *= 0.98;
-      }
-    }
-    
-    function onWindowResize() {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-      updateStatsUI(mainGeo ? mainGeo.attributes.position.count : 0, renderer.getPixelRatio());
-    }
-    
-    function initEventListeners() {
-      window.addEventListener("resize", onWindowResize);
-      canvas.addEventListener("pointermove", (e) => {
-        mouse.x = e.clientX;
-        mouse.y = e.clientY;
-        mouse.active = true;
-      });
-      canvas.addEventListener("pointerleave", () => { mouse.active = false; });
-    }
-    
-    function animate() {
-      const elapsed = clock.getElapsedTime();
-      
-      animateParticles(elapsed);
-      animateRingsAndLights(elapsed);
-      handleParallax();
-      
-      controls.update(); // 自动旋转在 OrbitControls 内控制
-      renderer.render(scene, camera);
-      requestAnimationFrame(animate);
-    }
-    
-    // 启动所有系统
-    try {
-      init();
-      initEventListeners();
-      onWindowResize();
-      // 最终统计更新
-      setTimeout(() => {
-        if (mainGeo) updateStatsUI(mainGeo.attributes.position.count, renderer.getPixelRatio());
-      }, 100);
-      animate();
-    } catch (err) {
-      console.error(err);
-      statsPanel.innerHTML = "⚠️ 初始化错误，请刷新或检查WebGL支持";
-    }
-  </script>
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+
+                img.onload = function() {
+                    bgImage.src = url;
+                    bgImage.classList.add('loaded');
+                    bgImage.style.display = 'block';
+                    loadingDots.classList.remove('active');
+                    isLoading = false;
+                };
+
+                img.onerror = function() {
+                    bgImage.style.display = 'none';
+                    const wrapper = document.getElementById('bgWrapper');
+                    const hue = (year * 31 + month * 13 + day * 7) % 360;
+                    wrapper.style.background =
+                        `linear-gradient(145deg, hsl(${hue}, 50%, 18%), hsl(${(hue + 40) % 360}, 45%, 10%))`;
+                    loadingDots.classList.remove('active');
+                    isLoading = false;
+                    console.warn('背景图加载失败，使用纯色 fallback');
+                };
+
+                isLoading = true;
+                img.src = url;
+
+                if (img.complete) {
+                    bgImage.src = url;
+                    bgImage.classList.add('loaded');
+                    bgImage.style.display = 'block';
+                    loadingDots.classList.remove('active');
+                    isLoading = false;
+                }
+            }
+
+            // ============================================================
+            //  5. 更新日历 UI
+            // ============================================================
+            function renderCalendar(year, month, selectedDay) {
+                const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+                monthYearDisplay.textContent = `${year}年${monthNames[month]}`;
+
+                const dateObj = new Date(year, month, selectedDay);
+                const dayOfWeek = dateObj.getDay();
+                dayNumberEl.textContent = selectedDay;
+                if (selectedDay >= 10) {
+                    dayNumberEl.classList.add('small');
+                } else {
+                    dayNumberEl.classList.remove('small');
+                }
+                dayWeekEl.textContent = getWeekdayName(dayOfWeek);
+
+                const firstDayOfMonth = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                daysGrid.innerHTML = '';
+
+                for (let i = 0; i < firstDayOfMonth; i++) {
+                    const empty = document.createElement('div');
+                    empty.className = 'day-cell empty';
+                    empty.textContent = '';
+                    daysGrid.appendChild(empty);
+                }
+
+                const todayDate = new Date();
+                const isTodayMonth = (year === todayDate.getFullYear() && month === todayDate.getMonth());
+                const todayDay = todayDate.getDate();
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'day-cell';
+                    cell.textContent = d;
+
+                    const dayIndex = new Date(year, month, d).getDay();
+                    if (isWeekend(dayIndex)) {
+                        cell.classList.add('weekend');
+                    }
+
+                    if (isTodayMonth && d === todayDay) {
+                        cell.classList.add('today');
+                    }
+
+                    if (d === selectedDay) {
+                        if (!(isTodayMonth && d === todayDay)) {
+                            cell.classList.add('selected');
+                        }
+                    }
+
+                    cell.addEventListener('click', function() {
+                        const day = parseInt(this.textContent, 10);
+                        viewDay = day;
+                        renderCalendar(viewYear, viewMonth, viewDay);
+                        updateBackground(viewYear, viewMonth, viewDay);
+                    });
+
+                    daysGrid.appendChild(cell);
+                }
+
+                if (selectedDay > daysInMonth) {
+                    viewDay = daysInMonth;
+                    renderCalendar(year, month, daysInMonth);
+                    updateBackground(year, month, daysInMonth);
+                }
+            }
+
+            // ============================================================
+            //  6. 实时时钟 (滚动时间)
+            // ============================================================
+            function updateClock() {
+                const now = new Date();
+                const hours = pad(now.getHours());
+                const minutes = pad(now.getMinutes());
+                const seconds = pad(now.getSeconds());
+                liveTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+
+            // 每秒更新一次
+            setInterval(updateClock, 1000);
+            updateClock(); // 立即显示
+
+            // ============================================================
+            //  7. 切换月份 / 日期
+            // ============================================================
+            function goToPrevMonth() {
+                if (viewMonth === 0) {
+                    viewYear--;
+                    viewMonth = 11;
+                } else {
+                    viewMonth--;
+                }
+                const maxDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+                if (viewDay > maxDay) viewDay = maxDay;
+                renderCalendar(viewYear, viewMonth, viewDay);
+                updateBackground(viewYear, viewMonth, viewDay);
+            }
+
+            function goToNextMonth() {
+                if (viewMonth === 11) {
+                    viewYear++;
+                    viewMonth = 0;
+                } else {
+                    viewMonth++;
+                }
+                const maxDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+                if (viewDay > maxDay) viewDay = maxDay;
+                renderCalendar(viewYear, viewMonth, viewDay);
+                updateBackground(viewYear, viewMonth, viewDay);
+            }
+
+            function goToToday() {
+                const now = new Date();
+                viewYear = now.getFullYear();
+                viewMonth = now.getMonth();
+                viewDay = now.getDate();
+                renderCalendar(viewYear, viewMonth, viewDay);
+                updateBackground(viewYear, viewMonth, viewDay);
+            }
+
+            // ============================================================
+            //  8. 初始化
+            // ============================================================
+            function init() {
+                const now = new Date();
+                viewYear = now.getFullYear();
+                viewMonth = now.getMonth();
+                viewDay = now.getDate();
+
+                renderCalendar(viewYear, viewMonth, viewDay);
+                updateBackground(viewYear, viewMonth, viewDay);
+
+                prevMonthBtn.addEventListener('click', goToPrevMonth);
+                nextMonthBtn.addEventListener('click', goToNextMonth);
+                todayBtn.addEventListener('click', goToToday);
+
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        goToPrevMonth();
+                    } else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        goToNextMonth();
+                    } else if (e.key === 't' || e.key === 'T') {
+                        goToToday();
+                    }
+                });
+
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden) {
+                        const now = new Date();
+                        const todayKey = formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
+                        const currentKey = formatDateKey(viewYear, viewMonth, viewDay);
+                        if (todayKey !== currentKey) {
+                            goToToday();
+                        }
+                    }
+                });
+
+                console.log('📅 PC 宽屏日历已启动，每日更新图片，滚动时钟已开启');
+                console.log(`📍 当前日期: ${viewYear}年${viewMonth+1}月${viewDay}日`);
+            }
+
+            if (document.readyState === 'complete') {
+                init();
+            } else {
+                window.addEventListener('load', init);
+            }
+
+        })();
+    </script>
 </body>
 </html>
